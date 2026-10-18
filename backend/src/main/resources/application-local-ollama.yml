@@ -1,0 +1,59 @@
+# Runs every AI task on a local Ollama model instead of Gemini. Activate it next to "local":
+#   ./mvnw spring-boot:run -Dspring-boot.run.profiles=local,local-ollama
+# Needs a running Ollama (https://ollama.com) with the models pulled: ollama pull qwen3.5:4b && ollama pull embeddinggemma
+# A small model on a laptop CPU is slow and follows schemas less reliably than Gemini; the budgets and the evaluation
+# attempt lease below are raised accordingly (the evaluation budget must stay below the lease).
+app:
+  ai:
+    enabled: true
+    providers:
+      ollama:
+        enabled: true
+        timeout: 240s
+        max-retries: 1
+        # Prompt and answer together. Ollama's default of 4096 tokens cut the 13-dimension design evaluation short (its prompt
+        # alone is about 3,600 tokens); a larger window costs memory on the machine running the model.
+        context-window: ${OLLAMA_CONTEXT_WINDOW:16384}
+    routes:
+      question-generation:
+        provider: ollama
+        model: ${OLLAMA_MODEL:qwen3.5:4b}
+        thinking: OFF
+        budget: 240s
+      follow-up-generation:
+        provider: ollama
+        model: ${OLLAMA_MODEL:qwen3.5:4b}
+        thinking: OFF
+        budget: 180s
+      answer-evaluation:
+        provider: ollama
+        model: ${OLLAMA_MODEL:qwen3.5:4b}
+        thinking: OFF
+        budget: 260s
+      report-writing:
+        provider: ollama
+        model: ${OLLAMA_MODEL:qwen3.5:4b}
+        thinking: OFF
+        budget: 270s
+      resume-extraction:
+        provider: ollama
+        model: ${OLLAMA_MODEL:qwen3.5:4b}
+        thinking: OFF
+        budget: 270s
+  rag:
+    embedding:
+      provider: ollama
+      model: ${OLLAMA_EMBEDDING_MODEL:embeddinggemma}
+      batch-size: 32
+      document-timeout: 120s
+      # The evaluation budget (260s) + this must stay below the lease (300s).
+      query-timeout: 30s
+    retrieval:
+      # Calibrated on ai-evals/datasets/retrieval.jsonl (RAG_ARCHITECTURE.md): off-topic queries top out near 0.19.
+      min-similarity: ${RAG_MIN_SIMILARITY:0.30}
+    deduplication:
+      # Measured for embeddinggemma on ai-evals/datasets/question-duplicates.jsonl: different questions on the same topic
+      # reach 0.773; 0.80 catches 17 of 25 paraphrases with no false repeat (the lexical check still catches close wording).
+      min-similarity: ${RAG_DEDUP_MIN_SIMILARITY:0.80}
+  evaluation:
+    attempt-lease: 300s

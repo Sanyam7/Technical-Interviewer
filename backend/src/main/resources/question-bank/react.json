@@ -1,0 +1,361 @@
+{
+  "skill": "react",
+  "topics": [
+    {
+      "topic": "components-props-state",
+      "subtopics": ["Props and state", "Lifting state up", "Controlled and uncontrolled inputs", "State updates"],
+      "misconceptions": [
+        "A child component can change the props it receives",
+        "setState changes the state variable immediately",
+        "Every value shown on screen should be kept in state"
+      ],
+      "references": ["react/components-props-state.md"],
+      "templates": [
+        {
+          "id": "react-props-vs-state", "type": "CONCEPT", "subtopic": "Props and state", "levels": [1, 3],
+          "question": "What is the difference between props and state in React, and how do you decide where a piece of state should live?",
+          "keyPoints": [
+            "Props are inputs passed by the parent and read-only for the child",
+            "State is data a component owns that changes over time; updating it re-renders the component",
+            "Values that can be computed from props or state should be computed during render, not stored",
+            "State lives in the closest common ancestor of the components that need it (lifting state up)",
+            "Data flows down through props; changes flow up through callbacks"
+          ]
+        },
+        {
+          "id": "react-controlled-inputs", "type": "CONCEPT", "subtopic": "Controlled and uncontrolled inputs", "levels": [1, 3],
+          "question": "What is the difference between controlled and uncontrolled form inputs in React, and how would you build a form with validation?",
+          "keyPoints": [
+            "A controlled input takes its value from state and updates it in onChange, so React holds the truth",
+            "An uncontrolled input keeps its value in the DOM; it is read through a ref or on submit (defaultValue sets the start)",
+            "Controlled inputs make instant validation and dependent fields easy, at the cost of a render per keystroke",
+            "Validate on change or blur and again on submit, and show errors next to the fields in an accessible way",
+            "Form libraries such as React Hook Form use uncontrolled inputs for performance"
+          ]
+        },
+        {
+          "id": "react-lifting-state", "type": "SCENARIO", "subtopic": "Lifting state up", "levels": [2, 3],
+          "question": "A search box and a results list are sibling components, and typing in the box should filter the list. How would you structure the state?",
+          "keyPoints": [
+            "Keep the query in the common parent and pass the value and an onChange callback to the search box",
+            "Pass the query (or the filtered results) to the list",
+            "Compute the filtered list during render instead of storing it in state",
+            "Debounce or defer the filtering when it is expensive; keep the query in the URL if searches should be shareable"
+          ]
+        },
+        {
+          "id": "react-stale-state-updates", "type": "DEBUGGING", "subtopic": "State updates", "levels": [1, 3],
+          "question": "A click handler calls setCount(count + 1) three times, but the counter goes up by only one. Why, and how do you fix it?",
+          "keyPoints": [
+            "A state update is queued and takes effect on the next render",
+            "count is the value of the current render, so all three calls set the same next value",
+            "The updater form setCount(c => c + 1) computes each update from the latest pending state",
+            "React batches the updates of one event into a single re-render"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "hooks",
+      "subtopics": ["useState and useEffect", "useRef", "Rules of hooks", "Custom hooks", "Stale closures"],
+      "misconceptions": [
+        "useEffect runs synchronously during rendering",
+        "Hooks may be called conditionally when the condition rarely changes",
+        "Changing a ref's current value re-renders the component"
+      ],
+      "references": ["react/hooks.md"],
+      "templates": [
+        {
+          "id": "react-usestate-useeffect", "type": "CONCEPT", "subtopic": "useState and useEffect", "levels": [1, 3],
+          "question": "How do useState and useEffect work? When does an effect run, and what is its dependency array for?",
+          "keyPoints": [
+            "useState returns the current value and a setter; calling the setter schedules a re-render with the new value",
+            "useEffect runs after React has committed the render to the screen",
+            "Without a dependency array the effect runs after every render; with [] once after mounting; otherwise when a dependency changes",
+            "The cleanup function runs before the effect runs again and when the component unmounts",
+            "Effects synchronise with external systems; values derived from props or state belong in render"
+          ]
+        },
+        {
+          "id": "react-rules-of-hooks", "type": "INTERNALS", "subtopic": "Rules of hooks", "levels": [2, 4],
+          "question": "Why must hooks be called at the top level of a component and never inside conditions or loops?",
+          "keyPoints": [
+            "React identifies each hook by the order in which it is called during render",
+            "The state of each hook is stored per component in that order",
+            "Calling a hook conditionally shifts the order, so state is matched to the wrong hook",
+            "Put the condition inside the hook instead; the ESLint rules-of-hooks rule enforces this"
+          ]
+        },
+        {
+          "id": "react-interval-stale-closure", "type": "DEBUGGING", "subtopic": "Stale closures", "levels": [2, 4],
+          "question": "A component starts a setInterval in a useEffect with an empty dependency array. The interval callback logs a counter from state, and it always logs 0 although the counter on screen increases. Why?",
+          "keyPoints": [
+            "The effect ran once and its callback captured the counter from the first render (a stale closure)",
+            "With an empty dependency array the effect never re-runs to pick up new values",
+            "Use the functional updater, keep the latest value in a ref, or list the value as a dependency and restart the interval in the cleanup",
+            "The exhaustive-deps lint rule warns about the missing dependency"
+          ]
+        },
+        {
+          "id": "react-useref", "type": "CONCEPT", "subtopic": "useRef", "levels": [1, 3],
+          "question": "What is useRef used for, and how is it different from state?",
+          "keyPoints": [
+            "A ref holds a mutable value in .current that persists between renders",
+            "Changing it does not cause a re-render",
+            "It is used for DOM elements (focus, measuring, scrolling) and for values such as timer ids or the latest callback",
+            "State is for values that the rendered output depends on"
+          ]
+        },
+        {
+          "id": "react-custom-hook", "type": "SCENARIO", "subtopic": "Custom hooks", "levels": [2, 4],
+          "question": "Several components fetch data, track loading and error states, and must ignore the response once they unmount. How would you share that logic?",
+          "keyPoints": [
+            "Extract a custom hook that holds the state and the effect and returns data, error and loading",
+            "Custom hooks share logic, not state: every component that calls it gets its own state",
+            "Abort the request or ignore a late response in the effect's cleanup",
+            "A server-state library (TanStack Query, SWR) adds caching, deduplication and retries on top"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "effects-data-fetching",
+      "subtopics": ["Effect dependencies and cleanup", "Race conditions", "Loading and error states", "Server-state libraries"],
+      "misconceptions": [
+        "Effects are the right place to compute derived data",
+        "An effect that depends on an object re-runs only when the object's contents change",
+        "Fetching in useEffect takes care of caching and deduplication"
+      ],
+      "references": ["react/effects-data-fetching.md"],
+      "templates": [
+        {
+          "id": "react-fetch-race", "type": "DEBUGGING", "subtopic": "Race conditions", "levels": [2, 4],
+          "question": "A user page fetches data in a useEffect whenever the userId prop changes. When someone switches between users quickly, the page sometimes shows the wrong user's data. Why, and how do you fix it?",
+          "keyPoints": [
+            "Responses can arrive out of order, so an older request that finishes last overwrites the newer data",
+            "In the effect's cleanup set an ignore flag, or abort the request with an AbortController",
+            "Only apply a response that belongs to the current userId",
+            "Server-state libraries key requests by id and handle this"
+          ]
+        },
+        {
+          "id": "react-effect-cleanup", "type": "CONCEPT", "subtopic": "Effect dependencies and cleanup", "levels": [2, 3],
+          "question": "When does an effect need a cleanup function? Give examples, and explain what happens when a dependency is missing.",
+          "keyPoints": [
+            "Cleanup undoes what the effect set up: subscriptions, event listeners, timers, connections, requests in flight",
+            "It runs before the effect runs again and on unmount; in development StrictMode React runs setup and cleanup an extra time to expose missing cleanups",
+            "A missing dependency makes the effect use stale values and not re-run when that value changes",
+            "Objects and functions created during render are new every time, so as dependencies they re-run the effect unless memoised"
+          ]
+        },
+        {
+          "id": "react-async-ui-states", "type": "SCENARIO", "subtopic": "Loading and error states", "levels": [2, 3],
+          "question": "Design how a product list page handles the loading, empty, error and retry states of its API request.",
+          "keyPoints": [
+            "Track the request status explicitly (loading, success, error) rather than inferring it from the data",
+            "Show a skeleton or spinner while loading and a distinct empty state when there are no results",
+            "Show an error message with a retry action on failure",
+            "Keep the previous data visible while refetching, and stop updating state after unmount",
+            "Announce status changes to assistive technology"
+          ]
+        },
+        {
+          "id": "react-server-state-libraries", "type": "CONCEPT", "subtopic": "Server-state libraries", "levels": [3, 4],
+          "question": "Why do many teams use a library such as TanStack Query instead of fetching with useEffect and useState?",
+          "keyPoints": [
+            "Server data is a cache of remote state, not UI state",
+            "The library caches by query key, deduplicates concurrent requests and shares the data between components",
+            "It refetches in the background, serves stale data while revalidating and retries failures",
+            "Mutations can invalidate or optimistically update the cached data",
+            "It removes most hand-written effect code and its race conditions"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "rendering-reconciliation",
+      "subtopics": ["Virtual DOM and reconciliation", "What causes a re-render", "Keys", "Render and commit phases", "Batching and concurrent rendering"],
+      "misconceptions": [
+        "A re-render always updates the DOM",
+        "Using the array index as the key is always fine",
+        "A child component re-renders only when its props change",
+        "The virtual DOM is always faster than updating the DOM directly"
+      ],
+      "references": ["react/rendering-reconciliation.md"],
+      "templates": [
+        {
+          "id": "react-virtual-dom", "type": "INTERNALS", "subtopic": "Virtual DOM and reconciliation", "levels": [2, 4],
+          "question": "What is the virtual DOM, and how does React's reconciliation decide what to change in the real DOM?",
+          "keyPoints": [
+            "Rendering produces a tree of React elements, a lightweight description of the UI",
+            "On an update React compares the new tree with the previous one (reconciliation)",
+            "An element of a different type replaces the old one, and its whole subtree is remounted",
+            "An element of the same type keeps its DOM node and component state; only changed attributes are updated and its children are compared",
+            "Children in lists are matched by key, and only the computed differences are applied to the DOM in the commit phase"
+          ]
+        },
+        {
+          "id": "react-rerender-causes", "type": "CONCEPT", "subtopic": "What causes a re-render", "levels": [2, 3],
+          "question": "What causes a React component to re-render?",
+          "keyPoints": [
+            "Its own state changes to a different value",
+            "Its parent re-renders: children re-render by default even when their props are unchanged",
+            "A context it reads changes",
+            "React.memo skips re-rendering when the props are shallowly equal",
+            "A re-render does not necessarily change the DOM"
+          ]
+        },
+        {
+          "id": "react-index-keys", "type": "DEBUGGING", "subtopic": "Keys", "levels": [2, 4],
+          "question": "In a todo list rendered with the array index as key, deleting the first item makes checkbox states and typed text appear on the wrong items. Why?",
+          "keyPoints": [
+            "Keys tell React which element is which between renders",
+            "Removing the first item shifts every index, so React reuses the components and DOM inputs of the wrong items",
+            "Use a stable, unique id from the data as the key",
+            "The index is acceptable only for static lists that never reorder or change"
+          ]
+        },
+        {
+          "id": "react-render-commit", "type": "INTERNALS", "subtopic": "Render and commit phases", "levels": [3, 5],
+          "question": "What happens in React's render phase and in its commit phase, and why must rendering be pure?",
+          "keyPoints": [
+            "In the render phase React calls components to compute the new tree and compares it with the old one",
+            "With concurrent rendering the render phase can be interrupted, restarted or thrown away",
+            "The commit phase applies the DOM changes, then runs layout effects; passive effects (useEffect) run after the browser paints",
+            "Side effects during render can run several times or for renders that are never committed, so components must be pure",
+            "StrictMode renders twice in development to expose impure components"
+          ]
+        },
+        {
+          "id": "react-batching-transitions", "type": "CONCEPT", "subtopic": "Batching and concurrent rendering", "levels": [3, 5],
+          "question": "What is automatic batching in React 18, and what do startTransition and useDeferredValue help with?",
+          "keyPoints": [
+            "Several state updates in the same event or tick are combined into one re-render, also inside promises and timeouts since React 18",
+            "startTransition marks an update as non-urgent, so urgent updates such as typing are not blocked and the transition can be interrupted",
+            "useDeferredValue lets an expensive part of the UI render with a value that lags behind",
+            "They make the UI more responsive; they do not make the rendering work itself cheaper"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "performance",
+      "subtopics": ["Preventing unnecessary re-renders", "Memoization", "Code splitting", "Long lists", "Profiling"],
+      "misconceptions": [
+        "Wrapping everything in useMemo and useCallback makes an app faster",
+        "React.memo prevents a re-render even when a new object is passed as a prop",
+        "Performance should be optimised before it is measured"
+      ],
+      "references": ["react/performance.md"],
+      "templates": [
+        {
+          "id": "react-prevent-rerenders", "type": "CONCEPT", "subtopic": "Preventing unnecessary re-renders", "levels": [3, 4],
+          "question": "How do you prevent unnecessary re-renders in React, and when is it worth doing?",
+          "keyPoints": [
+            "Measure first with the React DevTools Profiler",
+            "Keep state close to where it is used and split components so an update touches less of the tree",
+            "React.memo skips a re-render when the props are shallowly equal",
+            "useMemo and useCallback keep object and function props stable so that memoised children can skip",
+            "Memoisation has its own cost; use it where renders are measurably expensive"
+          ]
+        },
+        {
+          "id": "react-memo-broken", "type": "DEBUGGING", "subtopic": "Memoization", "levels": [3, 5],
+          "question": "A large table wrapped in React.memo still re-renders on every keystroke in the parent's search field, and the profiler says its props changed. What is going on?",
+          "keyPoints": [
+            "The parent creates a new object, array or function prop on every render, for example an inline {} or () => ...",
+            "React.memo compares props shallowly, so a new reference counts as a change",
+            "Stabilise those props with useMemo or useCallback, or move constant values out of the component",
+            "Or move the search state into its own component so that the table's parent does not re-render on each keystroke"
+          ]
+        },
+        {
+          "id": "react-slow-dashboard", "type": "SCENARIO", "subtopic": "Profiling", "levels": [3, 5],
+          "question": "A dashboard page takes four seconds to become interactive, and scrolling its 5,000-row table is janky. How would you approach optimising it?",
+          "keyPoints": [
+            "Profile first (browser Performance panel, Lighthouse, React Profiler) to find where the time goes",
+            "Shrink the initial JavaScript with code splitting and lazy-loading of heavy routes and components",
+            "Virtualise the long list so that only the visible rows are rendered",
+            "Memoise expensive rows and computations",
+            "Load less data up front: paginate, or defer what is not needed for the first view"
+          ]
+        },
+        {
+          "id": "react-code-splitting", "type": "CONCEPT", "subtopic": "Code splitting", "levels": [3, 4],
+          "question": "What is code splitting, and how do React.lazy and Suspense support it?",
+          "keyPoints": [
+            "The bundle is split into chunks that are loaded when needed instead of one large download",
+            "A dynamic import() creates a split point",
+            "React.lazy renders a component from a dynamic import, and Suspense shows a fallback while the chunk loads",
+            "Split by route and by heavy, rarely used components; very small chunks add requests"
+          ]
+        },
+        {
+          "id": "react-long-list", "type": "SCENARIO", "subtopic": "Long lists", "levels": [3, 4],
+          "question": "A chat window renders every one of thousands of messages and becomes slow as the conversation grows. What would you change?",
+          "keyPoints": [
+            "Rendering thousands of DOM nodes is slow regardless of React",
+            "Virtualise the list (for example react-window or TanStack Virtual) so only visible messages are rendered",
+            "Give messages stable keys and memoise message components so new messages do not re-render old ones",
+            "Load older messages on demand (pagination) instead of all at once"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "state-management",
+      "subtopics": ["Context API", "Redux Toolkit and external stores", "Server state versus client state", "Derived state"],
+      "misconceptions": [
+        "All application state belongs in a global store",
+        "Context is a state management library that avoids re-renders",
+        "Server data should be copied into Redux"
+      ],
+      "references": ["react/state-management.md"],
+      "templates": [
+        {
+          "id": "react-context-vs-redux", "type": "CONCEPT", "subtopic": "Redux Toolkit and external stores", "levels": [2, 4],
+          "question": "When would you use the Context API and when Redux Toolkit for state shared between many components?",
+          "keyPoints": [
+            "Context passes a value down the tree without prop drilling; it is a transport, not a store",
+            "Every consumer re-renders when the context value changes",
+            "Context suits values that change rarely: theme, current user, locale",
+            "Redux Toolkit (or Zustand) is an external store with selectors, so components re-render only when their slice changes, with devtools and middleware",
+            "Server data is better kept in a server-state library than in either"
+          ]
+        },
+        {
+          "id": "react-state-kinds", "type": "SCENARIO", "subtopic": "Server state versus client state", "levels": [2, 4],
+          "question": "Several pages need the logged-in user, a shopping cart and the product catalogue. How would you manage each kind of state?",
+          "keyPoints": [
+            "Tell server state from client state",
+            "The catalogue is server state: fetch and cache it with a server-state library",
+            "The cart is client state owned by the UI: a small store or a context with a reducer, possibly persisted",
+            "The logged-in user comes from an auth context or a cached query",
+            "Keep state as local as possible and share only what several parts need"
+          ]
+        },
+        {
+          "id": "react-context-rerenders", "type": "DEBUGGING", "subtopic": "Context API", "levels": [3, 4],
+          "question": "Every component that reads an AppContext re-renders whenever any part of its value changes, and the app feels sluggish. Why, and how would you fix it?",
+          "keyPoints": [
+            "All consumers re-render when the provided value changes",
+            "A value written as an object literal in the provider is new on every render, so it changes every time",
+            "Memoise the value with useMemo",
+            "Split the context by concern or by how often it changes (for example state and dispatch apart)",
+            "For frequently changing shared state use a store with selectors"
+          ]
+        },
+        {
+          "id": "react-derived-state", "type": "CONCEPT", "subtopic": "Derived state", "levels": [2, 3],
+          "question": "Why is it a mistake to copy props into state, or to store values that can be computed from other state?",
+          "keyPoints": [
+            "A copy goes out of sync: it does not follow later changes of the prop",
+            "Two sources of truth for the same fact cause bugs",
+            "Compute derived values during render, with useMemo if the computation is expensive",
+            "To reset state when an identity changes, give the component a key"
+          ]
+        }
+      ]
+    }
+  ]
+}

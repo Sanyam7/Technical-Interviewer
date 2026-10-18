@@ -1,0 +1,62 @@
+{
+  "id": "food-delivery",
+  "title": "Design a food delivery platform",
+  "levels": [
+    3,
+    5
+  ],
+  "statement": "Design the backend of a food delivery app like DoorDash or Deliveroo. Customers browse nearby restaurants and menus, place and pay for orders, and follow their courier on a map. Restaurants accept and prepare orders; couriers receive delivery offers and share their location while delivering.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "20 million orders per day in 500 cities; the lunch and dinner peaks are 5 times the average.",
+    "1 million active couriers each send a location update every 5 seconds while on shift.",
+    "A customer must never be charged for an order the restaurant never receives."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "splits the system into parts with clear ownership: restaurants and menus, orders, payments, dispatch and courier location"
+    },
+    {
+      "id": "kp2",
+      "text": "models an order as a state machine (placed, accepted, preparing, picked up, delivered, cancelled) owned by the order service"
+    },
+    {
+      "id": "kp3",
+      "text": "keeps payment and order consistent: authorise with an idempotency key, create the order, capture later, or void when the order fails"
+    },
+    {
+      "id": "kp4",
+      "text": "ingests about 200,000 courier location updates per second into an in-memory geo index or a stream, not the main database"
+    },
+    {
+      "id": "kp5",
+      "text": "matches orders to nearby couriers with a geospatial lookup (geohash or similar) and sends offers with timeouts and reassignment"
+    },
+    {
+      "id": "kp6",
+      "text": "serves restaurant and menu browsing from caches or a search index by location, because it is read-heavy"
+    },
+    {
+      "id": "kp7",
+      "text": "publishes order events (placed, accepted, picked up) on a queue so notifications, dispatch and analytics react asynchronously"
+    },
+    {
+      "id": "kp8",
+      "text": "plans for the peaks with autoscaled stateless services and data partitioned by city or region"
+    },
+    {
+      "id": "kp9",
+      "text": "pushes live tracking to customers over WebSockets or similar at a reduced update rate"
+    }
+  ],
+  "probes": {
+    "RELIABILITY": "A customer's payment succeeds but the order service crashes before saving the order. What happens to the customer's money?",
+    "SCALABILITY": "Order traffic increases 100x during a nationwide promotion. What breaks first, and what do you change?",
+    "DATA_MODEL": "Which data would you keep in SQL, and which in NoSQL or in-memory stores? Why each choice?",
+    "CACHING": "Where would you introduce caching for restaurant browsing, and how do you handle a restaurant that suddenly closes or runs out of a dish?",
+    "FAILURE_HANDLING": "The payment provider is down for ten minutes at dinner time. What do customers experience?",
+    "MESSAGING": "How do the restaurant, the courier and the customer all learn that an order changed state?",
+    "AVAILABILITY": "The primary database of one region fails. How do orders in that region keep flowing?",
+    "OBSERVABILITY": "How would you detect that orders in one city are stuck in 'accepted' and never get picked up?"
+  }
+}

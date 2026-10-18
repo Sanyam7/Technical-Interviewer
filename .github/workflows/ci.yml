@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (build, unit and integration tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # Integration tests start PostgreSQL + pgvector through Testcontainers;
+      # Docker is preinstalled on GitHub-hosted Ubuntu runners.
+      - name: Build and test
+        run: ./mvnw -B verify
+
+  frontend:
+    name: Frontend (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      # Known vulnerabilities in the production dependencies fail the build (high severity and above).
+      - run: pnpm audit --prod --audit-level=high
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  images:
+    name: Docker images (backend, web) and the production stack's configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      # The images are built, not pushed: a Dockerfile that no longer builds fails the change that broke it.
+      - name: Build the backend image
+        run: docker build -t tech-interviewer-backend backend/
+      - name: Build the web image and validate its Caddyfile
+        run: |
+          docker build -t tech-interviewer-web frontend/
+          docker run --rm tech-interviewer-web caddy validate --config /etc/caddy/Caddyfile
+      - name: Check docker-compose.prod.yml with the example settings
+        run: |
+          sed -e 's/^POSTGRES_PASSWORD=$/POSTGRES_PASSWORD=ci/' -e 's/^POSTGRES_APP_PASSWORD=$/POSTGRES_APP_PASSWORD=ci/' \
+              -e 's/^JWT_SECRET=$/JWT_SECRET=ci/' .env.production.example > "$RUNNER_TEMP/ci.env"
+          docker compose -f docker-compose.prod.yml --env-file "$RUNNER_TEMP/ci.env" config --quiet

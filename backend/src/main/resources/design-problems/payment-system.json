@@ -1,0 +1,62 @@
+{
+  "id": "payment-system",
+  "title": "Design a payment system",
+  "levels": [
+    4,
+    5
+  ],
+  "statement": "Design the payment system of an online marketplace. Buyers pay for orders with cards or wallets through external payment providers; sellers are paid out weekly after the platform's fee. Finance needs every cent accounted for, and a buyer must never be charged twice for the same order.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "10 million payments per day, with peaks of 3,000 payments per second during sales.",
+    "Payment providers sometimes time out or answer late; a provider's callback (webhook) can arrive minutes later.",
+    "Every movement of money must be auditable for 7 years."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "uses an idempotency key per payment attempt so retries by clients or services never charge twice"
+    },
+    {
+      "id": "kp2",
+      "text": "models a payment as a state machine (created, authorised, captured, refunded, failed) persisted before calling the provider"
+    },
+    {
+      "id": "kp3",
+      "text": "records money movements in an append-only double-entry ledger whose entries balance"
+    },
+    {
+      "id": "kp4",
+      "text": "handles a provider timeout by asking the provider for the payment's status or waiting for the webhook, never by blindly charging again"
+    },
+    {
+      "id": "kp5",
+      "text": "reconciles daily against the providers' settlement reports to detect and repair mismatches"
+    },
+    {
+      "id": "kp6",
+      "text": "keeps payments and the ledger in a strongly consistent relational database with transactions"
+    },
+    {
+      "id": "kp7",
+      "text": "processes webhooks and payouts asynchronously through a durable queue with retries and a dead-letter queue"
+    },
+    {
+      "id": "kp8",
+      "text": "protects card data with tokenisation by the provider (keeping PCI scope small), encryption, strict access control and audit logs"
+    },
+    {
+      "id": "kp9",
+      "text": "can use a second provider, or degrade gracefully, when one provider fails"
+    }
+  ],
+  "probes": {
+    "RELIABILITY": "The provider charges the card but your service times out before receiving the answer. What do you do so the buyer is charged exactly once?",
+    "DATA_MODEL": "SQL or NoSQL for payments and the ledger, and why? What are the main tables?",
+    "FAILURE_HANDLING": "Your main payment provider is down during a big sale. What happens to checkouts?",
+    "SECURITY": "How do you handle card data, and who in the company can see or move money?",
+    "OBSERVABILITY": "How would you discover that one payment in ten thousand is captured at the provider but missing from your ledger?",
+    "SCALABILITY": "Sales traffic increases 10x. Which part of the payment path becomes the bottleneck?",
+    "MESSAGING": "How do you process provider webhooks that can arrive late, twice, or out of order?",
+    "TRADE_OFFS": "Where does your design choose consistency over availability, and what does that cost the business?"
+  }
+}

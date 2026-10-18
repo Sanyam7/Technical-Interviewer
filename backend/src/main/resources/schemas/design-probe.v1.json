@@ -1,0 +1,26 @@
+{
+  "type": "object",
+  "description": "One follow-up question that probes the dimension of the candidate's design the interview software chose.",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": ["PROBE_DIMENSION"]
+    },
+    "criterion": {
+      "type": "string",
+      "description": "The dimension being probed, copied from the request (filled in per request)."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The question: one or two sentences, at most 400 characters, about the candidate's own design."
+    },
+    "estimatedMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 15,
+      "description": "Minutes a strong candidate needs to answer it."
+    }
+  },
+  "required": ["mode", "criterion", "prompt", "estimatedMinutes"],
+  "additionalProperties": false
+}

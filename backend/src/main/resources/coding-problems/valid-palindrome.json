@@ -1,0 +1,52 @@
+{
+  "id": "valid-palindrome",
+  "title": "Valid Palindrome",
+  "difficulty": 1,
+  "statement": "Given a string `s`, return `true` if it is a palindrome when you consider only letters and digits and ignore case, and `false` otherwise.\n\nA palindrome reads the same forwards and backwards.",
+  "constraints": [
+    "0 <= s.length <= 2 * 10^5",
+    "s consists of printable ASCII characters"
+  ],
+  "signature": {
+    "name": "isPalindrome",
+    "params": [
+      {
+        "name": "s",
+        "type": "string"
+      }
+    ],
+    "returns": "boolean"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Skips characters that are not letters or digits and compares letters case-insensitively"
+    },
+    {
+      "id": "kp2",
+      "text": "Uses two pointers moving towards each other instead of building reversed copies"
+    },
+    {
+      "id": "kp3",
+      "text": "Handles the empty string and a string without letters or digits as palindromes"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": ["A man, a plan, a canal: Panama"], "expected": true, "explanation": "Ignoring punctuation and case it reads \"amanaplanacanalpanama\"."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": ["race a car"], "expected": false, "explanation": "\"raceacar\" is not the same backwards."},
+    {"name": "word palindrome", "category": "GENERAL", "args": ["abba"], "expected": true},
+    {"name": "near palindrome", "category": "GENERAL", "args": ["abca"], "expected": false},
+    {"name": "mixed case with apostrophe", "category": "GENERAL", "args": ["No 'x' in Nixon"], "expected": true},
+    {"name": "empty string", "category": "EDGE", "args": [""], "expected": true},
+    {"name": "only punctuation", "category": "EDGE", "args": [" .,!"], "expected": true},
+    {"name": "single character", "category": "EDGE", "args": ["a"], "expected": true},
+    {"name": "digit and letter differ", "category": "EDGE", "args": ["0P"], "expected": false},
+    {"name": "long palindrome", "category": "PERFORMANCE", "args": [{"$concat": [{"$repeatString": ["ab", 50000]}, "x", {"$repeatString": ["ba", 50000]}]}], "expected": true}
+  ]
+}

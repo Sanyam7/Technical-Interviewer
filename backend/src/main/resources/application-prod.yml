@@ -1,0 +1,35 @@
+# Production: structured JSON logs, no API documentation endpoints, mandatory CORS configuration.
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+server:
+  # Behind a reverse proxy. "native" lets Tomcat's RemoteIpValve resolve the client: it rewrites
+  # request.getRemoteAddr() (which the per-IP rate limits read) from X-Forwarded-For, but only when the request
+  # came from an internal proxy. Tomcat's default internal proxies are the private and loopback ranges.
+  # Tomcat trusts proxies on private, loopback and link-local addresses by default (server.tomcat.remoteip.internal-proxies),
+  # which covers Cloud Run, Fly, Render and a Docker network. A platform whose proxy has a public address must list it
+  # (environment variable SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES, a regular expression), otherwise every client shares the
+  # proxy's address for the per-IP limits; a range set too wide would let a caller spoof its address.
+  # ("framework" would not do: it rewrites scheme and host but leaves getRemoteAddr() untouched.)
+  forward-headers-strategy: native
+
+spring:
+  datasource:
+    # A production database is reached over TLS (Neon and the other hosted services require it). Override with POSTGRES_SSLMODE
+    # (verify-full once the server's certificate authority is installed).
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:interviewer}?sslmode=${POSTGRES_SSLMODE:require}}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
+  ai:
+    # Production runs with the AI layer: without a provider (GEMINI_API_KEY) the application refuses to start.
+    enabled: ${AI_ENABLED:true}
+
+logging:
+  structured:
+    format:
+      console: ecs

@@ -1,0 +1,150 @@
+{
+  "type": "object",
+  "description": "The review of a system design as it stands after the latest answer: a verdict per expected key point, the mistakes, a rating with quoted evidence per design dimension and your confidence. There is no score: the system computes it from the ratings, the quotes it finds in the candidate's words, the verified key points and the factual errors.",
+  "properties": {
+    "keyPoints": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "One verdict for every expected key point, judged before the ratings.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "keyPointId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COVERED",
+              "PARTIAL",
+              "MISSING"
+            ]
+          },
+          "evidenceQuote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The candidate's own words, copied exactly, that show the key point; null when MISSING."
+          }
+        },
+        "required": [
+          "keyPointId",
+          "status",
+          "evidenceQuote"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "factualErrors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "The candidate's own words, copied exactly from an answer or the diagram, that state something false."
+          },
+          "correction": {
+            "type": "string",
+            "description": "What is true."
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            },
+            "description": "Tokens (r1, r2, ...) of the reference passages that support the correction; empty when it is judged from your own knowledge."
+          },
+          "repeats": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "The token (m1, m2, ...) of the earlier mistake of this interview that this statement repeats; empty when it repeats none."
+          },
+          "criterion": {
+            "type": "string",
+            "description": "The design dimension the mistake is about (filled in per request)."
+          }
+        },
+        "required": [
+          "claim",
+          "correction",
+          "sources",
+          "repeats",
+          "criterion"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Misconceptions: technically wrong statements in the answer."
+    },
+    "ratings": {
+      "type": "object",
+      "description": "One rating per design dimension of the rubric (filled in per request), each with the candidate's words it rests on.",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "candidateClaims": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      },
+      "description": "Statements the candidate made about their own experience, at most 300 characters each."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One neutral sentence, at most 500 characters, on the design as it stands."
+    },
+    "flags": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "enum": [
+          "INJECTION_SUSPECTED",
+          "OFF_TOPIC",
+          "LANGUAGE_MISMATCH"
+        ]
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "description": "How sure you are of this judgement, decided last. It is your own estimate and changes no rating.",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "One short sentence: what makes the judgement easy or hard to be sure of; at most 300 characters."
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        }
+      },
+      "required": [
+        "reason",
+        "level"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "keyPoints",
+    "factualErrors",
+    "ratings",
+    "candidateClaims",
+    "summary",
+    "flags",
+    "confidence"
+  ],
+  "additionalProperties": false
+}

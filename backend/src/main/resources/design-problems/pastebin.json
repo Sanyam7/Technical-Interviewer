@@ -1,0 +1,51 @@
+{
+  "id": "pastebin",
+  "title": "Design a text-sharing service like Pastebin",
+  "levels": [
+    1,
+    2
+  ],
+  "statement": "Design a service like Pastebin. A user pastes text, such as a code snippet or a log, and gets a link to share it. A paste can be public or unlisted, can expire after a time the user chooses, and cannot be edited once created. Anyone with the link can view it.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "About 5 million new pastes per day; a paste is at most 1 MB and usually around 10 KB.",
+    "There are about 10 views for every paste created.",
+    "Pastes are kept until they expire, and for at most 1 year."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "separates paste metadata (id, owner, visibility, expiry) from the content, and stores content of up to 1 MB in object storage or a blob store"
+    },
+    {
+      "id": "kp2",
+      "text": "generates unguessable ids for unlisted pastes (random, with enough entropy) instead of sequential numbers"
+    },
+    {
+      "id": "kp3",
+      "text": "estimates storage: about 50 GB of new content per day, around 18 TB per year"
+    },
+    {
+      "id": "kp4",
+      "text": "serves popular pastes from a cache or a CDN, which is simple because a paste never changes after creation"
+    },
+    {
+      "id": "kp5",
+      "text": "removes expired pastes with a background job or a storage lifecycle rule, and checks expiry when a paste is read"
+    },
+    {
+      "id": "kp6",
+      "text": "limits paste size and the creation rate per client to prevent abuse"
+    },
+    {
+      "id": "kp7",
+      "text": "keeps the web tier stateless behind a load balancer, with a replicated metadata database"
+    }
+  ],
+  "probes": {
+    "DATA_MODEL": "Where do you store the paste content versus its metadata, and why? Would you use SQL or NoSQL?",
+    "CACHING": "Pastes never change after they are created. How does that shape your caching, and where would you cache?",
+    "RELIABILITY": "How do you make sure expired pastes stop being served and are really deleted, even if the clean-up job fails for a day?",
+    "SECURITY": "How do you stop someone from listing every unlisted paste, or from using the service to spread malware?",
+    "SCALABILITY": "What happens if traffic increases 100x? What breaks first?"
+  }
+}

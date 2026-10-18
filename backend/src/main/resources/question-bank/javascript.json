@@ -1,0 +1,148 @@
+{
+  "skill": "javascript",
+  "topics": [
+    {
+      "topic": "language-core",
+      "subtopics": ["Scope, hoisting and closures", "this binding", "Prototypes and classes", "Equality and coercion", "Values and references"],
+      "misconceptions": [
+        "let and const are not hoisted",
+        "Arrow functions have their own this",
+        "== and === differ only in performance",
+        "const makes an object immutable",
+        "JavaScript classes work like Java classes"
+      ],
+      "references": ["javascript/language-core.md"],
+      "templates": [
+        {
+          "id": "js-closures", "type": "CONCEPT", "subtopic": "Scope, hoisting and closures", "levels": [1, 3],
+          "question": "What is a closure in JavaScript? Give a practical use, and explain the classic bug of creating functions in a for loop declared with var.",
+          "keyPoints": [
+            "A closure is a function together with the variables of the scope it was created in, which stay alive as long as the function does",
+            "Closures give private state, factories, partial application and event handlers that remember their context",
+            "With var there is one variable for the whole function, shared by every iteration, so every callback sees its final value",
+            "let creates a new binding for each iteration, which fixes the loop"
+          ]
+        },
+        {
+          "id": "js-hoisting", "type": "INTERNALS", "subtopic": "Scope, hoisting and closures", "levels": [2, 3],
+          "question": "What is hoisting? How do var, let, const and function declarations behave when they are used before their declaration?",
+          "keyPoints": [
+            "Declarations are processed before the code of their scope runs",
+            "var is hoisted and initialised to undefined",
+            "let and const are hoisted but stay uninitialised until their declaration (the temporal dead zone); using them earlier throws a ReferenceError",
+            "A function declaration is hoisted with its body; a function expression follows the rules of its variable",
+            "let and const are block-scoped, var is function-scoped"
+          ]
+        },
+        {
+          "id": "js-this", "type": "CONCEPT", "subtopic": "this binding", "levels": [2, 4],
+          "question": "How is the value of this determined in JavaScript, and why do arrow functions behave differently?",
+          "keyPoints": [
+            "this depends on how a function is called: obj.method() gives obj",
+            "A plain call gives undefined in strict mode (the global object otherwise); new gives the new object",
+            "call, apply and bind set this explicitly",
+            "Arrow functions have no this of their own; they use the this of the enclosing scope",
+            "Passing obj.method as a callback loses its this unless it is bound"
+          ]
+        },
+        {
+          "id": "js-prototypes", "type": "INTERNALS", "subtopic": "Prototypes and classes", "levels": [3, 4],
+          "question": "How does prototypal inheritance work, and what does the class keyword do under the hood?",
+          "keyPoints": [
+            "Every object has an internal link to a prototype object",
+            "A property lookup walks up the prototype chain until it finds the property or reaches null",
+            "Methods defined on the prototype are shared by all instances",
+            "class is syntax over constructor functions and prototypes: methods go on Class.prototype, extends links the prototypes, super calls the parent",
+            "Object.create creates an object with a given prototype"
+          ]
+        },
+        {
+          "id": "js-loose-equality", "type": "DEBUGGING", "subtopic": "Equality and coercion", "levels": [1, 3],
+          "question": "The check if (count == false) is true when count is 0 and also when it is an empty string, and [] == false is true as well. Why, and what should the code do instead?",
+          "keyPoints": [
+            "== converts both operands to a common type before comparing: false, '' and [] all become 0",
+            "=== compares type and value without conversion",
+            "Use === and convert explicitly when a conversion is intended",
+            "0, '', null, undefined, NaN and false are falsy; NaN is not equal to itself, so use Number.isNaN"
+          ]
+        },
+        {
+          "id": "js-shared-object", "type": "SCENARIO", "subtopic": "Values and references", "levels": [2, 3],
+          "question": "A function receives a settings object, changes one property and returns it. Later another part of the app shows the changed value unexpectedly. Explain why, and how you would avoid it.",
+          "keyPoints": [
+            "Objects are passed as a copy of the reference, so changing the parameter's properties changes the caller's object",
+            "Primitives are copied by value",
+            "const prevents reassignment, not mutation",
+            "Return a new object instead, for example { ...settings, theme: 'dark' }",
+            "Spread copies only one level; structuredClone makes a deep copy"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "async-event-loop",
+      "subtopics": ["The event loop", "Microtasks and macrotasks", "Promises", "async and await", "Cancellation and timeouts"],
+      "misconceptions": [
+        "setTimeout(fn, 0) runs fn immediately",
+        "async functions run on a separate thread",
+        "await blocks the whole program",
+        "Promise.all cancels the other promises when one of them rejects"
+      ],
+      "references": ["javascript/async-event-loop.md", "nodejs/nodejs-runtime.md"],
+      "templates": [
+        {
+          "id": "js-event-loop", "type": "INTERNALS", "subtopic": "The event loop", "levels": [2, 4],
+          "question": "How does the JavaScript event loop work? Why does a long synchronous loop freeze the page?",
+          "keyPoints": [
+            "JavaScript runs on one thread with one call stack",
+            "Timers, network and I/O are handled by the environment, which queues their callbacks as tasks",
+            "When the stack is empty the event loop runs the next task; after every task all queued microtasks (promise callbacks) run",
+            "A long synchronous computation keeps the stack busy, so no events, timers or rendering can happen",
+            "Move heavy work to a Web Worker (or a worker thread in Node) or split it into chunks"
+          ]
+        },
+        {
+          "id": "js-task-order", "type": "CONCEPT", "subtopic": "Microtasks and macrotasks", "levels": [3, 5],
+          "question": "In which order is this logged, and why: console.log('A'); setTimeout(() => console.log('B'), 0); Promise.resolve().then(() => console.log('C')); console.log('D');",
+          "keyPoints": [
+            "A and D are logged first, because they run synchronously",
+            "C comes next: the promise callback is a microtask, run as soon as the call stack is empty",
+            "B comes last: the timer callback is a task that runs in a later turn of the event loop",
+            "The output is A, D, C, B; all microtasks run before the next task"
+          ]
+        },
+        {
+          "id": "js-parallel-requests", "type": "SCENARIO", "subtopic": "Promises", "levels": [2, 4],
+          "question": "A page needs data from three independent APIs. How would you request it, and how does your choice behave when one request fails?",
+          "keyPoints": [
+            "Start all three requests before awaiting, and await Promise.all, so the total time is that of the slowest call",
+            "Awaiting each call in turn makes them sequential and adds their times up",
+            "Promise.all rejects as soon as one promise rejects; the other requests keep running and their results are discarded",
+            "Promise.allSettled returns every outcome, so the page can show partial data",
+            "Add timeouts or an AbortController"
+          ]
+        },
+        {
+          "id": "js-async-foreach", "type": "DEBUGGING", "subtopic": "async and await", "levels": [2, 4],
+          "question": "Inside items.forEach(async item => { await save(item) }), the code after the loop runs before the saves finish, and failed saves are not caught by the surrounding try/catch. Why?",
+          "keyPoints": [
+            "forEach ignores the promises returned by its callback and does not wait for them",
+            "The surrounding function continues at once, so its try/catch is no longer around the saves",
+            "Rejections nobody awaits become unhandled",
+            "Use for...of with await for sequential saves, or await Promise.all(items.map(save)) for concurrent ones"
+          ]
+        },
+        {
+          "id": "js-abort-fetch", "type": "CONCEPT", "subtopic": "Cancellation and timeouts", "levels": [3, 5],
+          "question": "How do you cancel a fetch request in flight, or give it a timeout, in JavaScript?",
+          "keyPoints": [
+            "Pass an AbortController's signal to fetch and call abort(); the fetch promise rejects with an AbortError",
+            "AbortSignal.timeout(ms) creates a signal for a timeout, and AbortSignal.any combines signals",
+            "Promises themselves cannot be cancelled: the API must accept a signal",
+            "In a React effect, abort in the cleanup function"
+          ]
+        }
+      ]
+    }
+  ]
+}

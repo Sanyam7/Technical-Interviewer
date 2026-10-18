@@ -1,0 +1,52 @@
+{
+  "id": "longest-substring-without-repeating",
+  "title": "Longest Substring Without Repeating Characters",
+  "difficulty": 3,
+  "statement": "Given a string `s`, return the length of the longest substring that contains no repeated character. A substring is a contiguous part of the string.",
+  "constraints": [
+    "0 <= s.length <= 2 * 10^5",
+    "s consists of English letters, digits, symbols and spaces"
+  ],
+  "signature": {
+    "name": "lengthOfLongestSubstring",
+    "params": [
+      {
+        "name": "s",
+        "type": "string"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(min(n, alphabet))"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Uses a sliding window whose left edge only moves forward"
+    },
+    {
+      "id": "kp2",
+      "text": "Remembers each character's last index (or a set) to move the left edge past a repeat"
+    },
+    {
+      "id": "kp3",
+      "text": "Does not move the left edge backwards when the last occurrence is before the window (for example \"abba\")"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": ["abcabcbb"], "expected": 3, "explanation": "The answer is \"abc\", length 3."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": ["bbbbb"], "expected": 1},
+    {"name": "Example 3", "category": "EXAMPLE", "args": ["pwwkew"], "expected": 3, "explanation": "\"wke\" has length 3; \"pwke\" is not a substring."},
+    {"name": "repeat inside the window", "category": "GENERAL", "args": ["dvdf"], "expected": 3},
+    {"name": "longest at the end", "category": "GENERAL", "args": ["tmmzuxt"], "expected": 5},
+    {"name": "spaces count as characters", "category": "GENERAL", "args": ["a b c a"], "expected": 3},
+    {"name": "empty string", "category": "EDGE", "args": [""], "expected": 0},
+    {"name": "single space", "category": "EDGE", "args": [" "], "expected": 1},
+    {"name": "last occurrence before the window", "category": "EDGE", "args": ["abba"], "expected": 2},
+    {"name": "long string", "category": "PERFORMANCE", "args": [{"$repeatString": ["abcdefghijklmnopqrstuvwxyz", 8000]}], "expected": 26}
+  ]
+}

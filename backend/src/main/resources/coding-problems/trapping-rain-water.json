@@ -1,0 +1,51 @@
+{
+  "id": "trapping-rain-water",
+  "title": "Trapping Rain Water",
+  "difficulty": 5,
+  "statement": "Given `n` non-negative integers that describe an elevation map where every bar has width 1, return how much water it traps after raining.",
+  "constraints": [
+    "1 <= height.length <= 2 * 10^5",
+    "0 <= height[i] <= 10^4"
+  ],
+  "signature": {
+    "name": "trap",
+    "params": [
+      {
+        "name": "height",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "The water above a bar is the smaller of the highest bars to its left and right, minus its own height"
+    },
+    {
+      "id": "kp2",
+      "text": "Computes it in O(n) with two pointers (or prefix and suffix maxima) instead of scanning both sides for every bar"
+    },
+    {
+      "id": "kp3",
+      "text": "Handles maps that trap nothing: one bar, monotonic heights"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1]], "expected": 6, "explanation": "6 units of water are trapped."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[4, 2, 0, 3, 2, 5]], "expected": 9},
+    {"name": "valley", "category": "GENERAL", "args": [[3, 0, 3]], "expected": 3},
+    {"name": "uneven walls", "category": "GENERAL", "args": [[5, 1, 2, 0, 3]], "expected": 6},
+    {"name": "several basins", "category": "GENERAL", "args": [[2, 0, 2, 0, 1, 0, 3]], "expected": 7},
+    {"name": "single bar", "category": "EDGE", "args": [[5]], "expected": 0},
+    {"name": "increasing heights", "category": "EDGE", "args": [[1, 2, 3, 4]], "expected": 0},
+    {"name": "decreasing heights", "category": "EDGE", "args": [[4, 3, 2, 1]], "expected": 0},
+    {"name": "wide basin", "category": "PERFORMANCE", "args": [{"$concat": [[1000], {"$repeat": [0, 199998]}, [1000]]}], "expected": 199998000}
+  ]
+}

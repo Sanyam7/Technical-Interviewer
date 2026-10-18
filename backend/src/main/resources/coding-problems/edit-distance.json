@@ -1,0 +1,59 @@
+{
+  "id": "edit-distance",
+  "title": "Edit Distance",
+  "difficulty": 5,
+  "statement": "Given two strings `word1` and `word2`, return the minimum number of operations needed to turn `word1` into `word2`.\n\nAn operation inserts a character, deletes a character or replaces a character.",
+  "constraints": [
+    "0 <= word1.length, word2.length <= 2000",
+    "word1 and word2 consist of lowercase English letters"
+  ],
+  "signature": {
+    "name": "minDistance",
+    "params": [
+      {
+        "name": "word1",
+        "type": "string"
+      },
+      {
+        "name": "word2",
+        "type": "string"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(m * n)",
+    "space": "O(min(m, n))"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Defines dp[i][j] as the distance between the first i characters of word1 and the first j of word2"
+    },
+    {
+      "id": "kp2",
+      "text": "Takes dp[i-1][j-1] when the characters match, else 1 plus the minimum of insert, delete and replace"
+    },
+    {
+      "id": "kp3",
+      "text": "Initialises the first row and column with i and j (empty prefixes)"
+    },
+    {
+      "id": "kp4",
+      "text": "Avoids plain recursion without memoisation, which is exponential"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": ["horse", "ros"], "expected": 3, "explanation": "horse -> rorse -> rose -> ros."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": ["intention", "execution"], "expected": 5},
+    {"name": "one replacement", "category": "GENERAL", "args": ["kitten", "sitten"], "expected": 1},
+    {"name": "classic pair", "category": "GENERAL", "args": ["sunday", "saturday"], "expected": 3},
+    {"name": "reversed", "category": "GENERAL", "args": ["abc", "cba"], "expected": 2},
+    {"name": "both empty", "category": "EDGE", "args": ["", ""], "expected": 0},
+    {"name": "one empty", "category": "EDGE", "args": ["", "abc"], "expected": 3},
+    {"name": "identical words", "category": "EDGE", "args": ["same", "same"], "expected": 0},
+    {"name": "long words", "category": "PERFORMANCE", "args": [{"$repeatString": ["ab", 1000]}, {"$repeatString": ["ba", 1000]}], "expected": 2}
+  ]
+}

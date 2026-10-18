@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.1.1</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.techinterviewer</groupId>
+	<artifactId>tech-interviewer</artifactId>
+	<version>0.1.0-SNAPSHOT</version>
+	<name>TechInterviewer</name>
+	<description>Backend of the AI Technical Interviewer: REST API, interview engine and AI orchestration.</description>
+	<properties>
+		<excluded.test.groups>live</excluded.test.groups>
+		<java.version>21</java.version>
+		<springdoc.version>3.1.1</springdoc.version>
+		<archunit.version>1.5.1</archunit.version>
+		<bucket4j.version>8.21.0</bucket4j.version>
+		<pdfbox.version>3.0.8</pdfbox.version>
+		<!--
+			Security advisories (OSV) against the versions managed by Spring Boot 4.1.1: Tomcat 11.0.24,
+			Jackson 3.1.5 and Jackson 2.21.5 (the latter through springdoc). Remove these three overrides
+			once a Spring Boot 4.1.x patch release manages these versions or newer.
+		-->
+		<tomcat.version>11.0.26</tomcat.version>
+		<jackson-bom.version>3.1.7</jackson-bom.version>
+		<jackson-2-bom.version>2.21.7</jackson-2-bom.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.springdoc</groupId>
+			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+			<version>${springdoc.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bucket4j</groupId>
+			<artifactId>bucket4j_jdk17-core</artifactId>
+			<version>${bucket4j.version}</version>
+		</dependency>
+		<dependency>
+			<!-- Text of uploaded PDF résumés (AI_ARCHITECTURE.md section 2.13). -->
+			<groupId>org.apache.pdfbox</groupId>
+			<artifactId>pdfbox</artifactId>
+			<version>${pdfbox.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-jpa-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-flyway-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-validation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-webmvc-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-testcontainers</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers-postgresql</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.tngtech.archunit</groupId>
+			<artifactId>archunit-junit5</artifactId>
+			<version>${archunit.version}</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>build-info</id>
+						<goals>
+							<goal>build-info</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>**/*Test.java</include>
+					</includes>
+					<!-- Tests against real AI providers (tag "live") run only on request; see LiveProviderSmokeTest. -->
+					<excludedGroups>${excluded.test.groups}</excludedGroups>
+					<systemPropertyVariables>
+						<!-- The labelled question pairs that calibrate semantic de-duplication (QuestionDuplicatesLiveTest). -->
+						<dedup.eval.dataset>${project.basedir}/../ai-evals/datasets/question-duplicates.jsonl</dedup.eval.dataset>
+						<!-- The labelled answers that measure the answer evaluator (AnswerEvaluationLiveTest), and where its scorecards go. -->
+						<answer.eval.dataset>${project.basedir}/../ai-evals/datasets/answer-evaluation.jsonl</answer.eval.dataset>
+						<answer.eval.reports>${project.basedir}/../ai-evals/reports</answer.eval.reports>
+						<!-- The labelled system design answers (DesignEvaluationLiveTest, DesignEvaluationDatasetTest). -->
+						<design.eval.dataset>${project.basedir}/../ai-evals/datasets/design-evaluation.jsonl</design.eval.dataset>
+						<!-- The labelled résumés that measure the résumé extractor (ResumeExtractionLiveTest). -->
+						<resume.eval.dataset>${project.basedir}/../ai-evals/datasets/resume-extraction.jsonl</resume.eval.dataset>
+						<!-- The repository, for the scan that keeps credentials out of it (SecretScanTest). -->
+						<repository.root>${project.basedir}/..</repository.root>
+					</systemPropertyVariables>
+					<!--
+						application.yml imports ../.env relative to the working directory. Running the tests from a
+						directory below target/ keeps a developer's real .env out of them.
+					-->
+					<workingDirectory>${project.build.directory}/test-run</workingDirectory>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<includes>
+						<include>**/*IT.java</include>
+					</includes>
+					<excludedGroups>${excluded.test.groups}</excludedGroups>
+					<systemPropertyVariables>
+						<!-- The labelled retrieval set lives at the repository root, next to the other AI evaluation data. -->
+						<rag.eval.dataset>${project.basedir}/../ai-evals/datasets/retrieval.jsonl</rag.eval.dataset>
+					</systemPropertyVariables>
+					<!--
+						application.yml imports ../.env relative to the working directory. Running the tests from a
+						directory below target/ keeps a developer's real .env out of them.
+					-->
+					<workingDirectory>${project.build.directory}/test-run</workingDirectory>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>

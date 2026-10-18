@@ -1,0 +1,31 @@
+# The self-hosted web server (docker-compose.prod.yml): the single-page app and, under /api, the backend, on one origin.
+# SITE_ADDRESS is a domain name in production (Caddy then obtains and renews its TLS certificate) or :80 to try it locally.
+{
+	admin off
+}
+
+# The security headers of the app, generated from scripts/securityHeaders.mjs at build time (snippet spa_headers).
+import /etc/caddy/spa-headers.caddy
+
+{$SITE_ADDRESS::80} {
+	encode zstd gzip
+
+	# The API: same origin, so the refresh cookie is first-party and the browser needs no CORS. Caddy replaces any
+	# X-Forwarded-For the client sent with the client's address; the backend trusts it because Caddy is on its private network.
+	handle /api/* {
+		reverse_proxy {$BACKEND_ADDRESS:backend:8080}
+	}
+
+	# The backend's actuator stays internal (the platform's health checks call the backend directly).
+	handle /actuator/* {
+		respond 404
+	}
+
+	# The app: hashed assets cached for good, every other path answered with index.html (client-side routes).
+	handle {
+		import spa_headers
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}

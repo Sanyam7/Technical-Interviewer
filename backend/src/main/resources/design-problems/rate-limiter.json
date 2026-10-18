@@ -1,0 +1,56 @@
+{
+  "id": "rate-limiter",
+  "title": "Design a distributed rate limiter",
+  "levels": [
+    2,
+    4
+  ],
+  "statement": "Your company exposes a public REST API served by 40 stateless API servers behind a load balancer. Design the rate limiter that enforces limits such as \"100 requests per minute per API key\" and \"10 login attempts per hour per IP address\" across all servers. A client that exceeds a limit gets HTTP 429 with a hint about when to retry.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "1 million active API keys; peak traffic is 200,000 requests per second.",
+    "The rate limiter may add at most 5 ms to a request at the 99th percentile.",
+    "Limits differ by plan (free, pro, enterprise) and the product team changes them without a deployment."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "chooses and explains an algorithm (token bucket, sliding window log or counter, fixed window) and its accuracy at window boundaries"
+    },
+    {
+      "id": "kp2",
+      "text": "keeps the counters in a shared low-latency store such as Redis, so every API server sees the same counts"
+    },
+    {
+      "id": "kp3",
+      "text": "makes check-and-increment atomic (an atomic increment with expiry, or a script run on the store) so two servers cannot both let a request through over the limit"
+    },
+    {
+      "id": "kp4",
+      "text": "decides what happens when the counter store is unavailable, failing open or closed per limit, and says why"
+    },
+    {
+      "id": "kp5",
+      "text": "returns 429 with Retry-After and rate-limit headers so clients can back off"
+    },
+    {
+      "id": "kp6",
+      "text": "partitions counters by key across a store cluster and keeps hot keys from overloading one node"
+    },
+    {
+      "id": "kp7",
+      "text": "loads the limit rules from a configuration store and caches them on each server with a short refresh"
+    },
+    {
+      "id": "kp8",
+      "text": "reduces round trips at 200,000 requests per second, for example with a local pre-check, batching or a sidecar"
+    }
+  ],
+  "probes": {
+    "FAILURE_HANDLING": "The Redis cluster holding the counters becomes unreachable for two minutes. What does your API do during that time?",
+    "SCALABILITY": "Traffic grows to 2 million requests per second. What changes in your design?",
+    "RELIABILITY": "Two API servers check the same key at the same moment. How do you make sure the limit is not exceeded?",
+    "TRADE_OFFS": "Why that algorithm? What does it get wrong at window boundaries, and when would you pick another one?",
+    "API_DESIGN": "What does a client see when it is throttled, and how does it know when to retry?",
+    "OBSERVABILITY": "How would you find out that the rate limiter is wrongly blocking legitimate customers?"
+  }
+}

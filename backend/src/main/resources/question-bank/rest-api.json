@@ -1,0 +1,148 @@
+{
+  "skill": "rest-api",
+  "topics": [
+    {
+      "topic": "http-api-design",
+      "subtopics": ["Resource design", "HTTP methods, safety and idempotency", "Status codes", "HTTP caching", "Conditional requests and ETags", "Optimistic concurrency", "Error responses", "Pagination and filtering", "Versioning and compatibility"],
+      "misconceptions": [
+        "PUT and POST are interchangeable",
+        "Errors can be returned as 200 with an error field",
+        "An idempotent request must return the same response every time",
+        "no-cache means that a response must not be stored",
+        "ETags only help with caching, not with concurrent updates",
+        "Removing a field that looks unused is a non-breaking change"
+      ],
+      "references": ["rest/rest-api-design.md", "system-design/api-design-rate-limiting.md", "spring-boot/web-mvc-rest.md"],
+      "templates": [
+        {
+          "id": "rest-methods", "type": "CONCEPT", "subtopic": "HTTP methods, safety and idempotency", "levels": [1, 3],
+          "question": "What is the difference between PUT, PATCH and POST? Which HTTP methods are safe and which are idempotent, and why does it matter?",
+          "keyPoints": [
+            "POST creates a resource in a collection or triggers processing, and is not idempotent",
+            "PUT replaces the resource at a known URI and is idempotent",
+            "PATCH applies a partial update and is not necessarily idempotent",
+            "Safe methods (GET, HEAD, OPTIONS) do not change state",
+            "Idempotent methods (GET, HEAD, OPTIONS, PUT, DELETE) have the same effect when repeated, so they can be retried safely"
+          ]
+        },
+        {
+          "id": "rest-status-codes", "type": "CONCEPT", "subtopic": "Status codes", "levels": [1, 3],
+          "question": "Which status codes would you return for a successful create, a validation error, a missing resource, an unauthenticated request, a forbidden request and a conflicting update?",
+          "keyPoints": [
+            "201 Created with a Location header for a successful create",
+            "400 Bad Request (or 422) for invalid input",
+            "404 Not Found for a missing resource",
+            "401 Unauthorized when the client is not authenticated, 403 Forbidden when it is authenticated but not allowed",
+            "409 Conflict, or 412 Precondition Failed with If-Match, for a conflicting update; 5xx only for server faults"
+          ]
+        },
+        {
+          "id": "rest-model-actions", "type": "SCENARIO", "subtopic": "Resource design", "levels": [1, 3],
+          "question": "Design the REST endpoints of a library system in which members borrow and return books. How do you model borrowing and returning?",
+          "keyPoints": [
+            "Resources are nouns: /books, /members, /loans",
+            "Borrowing creates a loan: POST /loans with the book and the member",
+            "Returning updates the loan, for example PATCH /loans/{id} setting returnedAt",
+            "GET /members/{id}/loans lists a member's loans",
+            "Avoid verbs in URLs such as /borrowBook"
+          ]
+        },
+        {
+          "id": "rest-duplicate-posts", "type": "DEBUGGING", "subtopic": "HTTP methods, safety and idempotency", "levels": [2, 3],
+          "question": "A client sometimes creates duplicate records when its POST request times out and its HTTP library retries automatically. What is the cause, and what are your options?",
+          "keyPoints": [
+            "The first POST may have succeeded on the server although the client never received the response",
+            "POST is not idempotent, so the retry creates a second record",
+            "An idempotency key sent by the client and stored by the server makes the retry return the first result",
+            "Or let the client choose the id and use PUT, which is idempotent",
+            "Or enforce a unique natural key, and do not retry non-idempotent requests automatically"
+          ]
+        },
+        {
+          "id": "rest-http-caching", "type": "CONCEPT", "subtopic": "HTTP caching", "levels": [2, 3],
+          "question": "How do Cache-Control, ETag and If-None-Match work together to cache GET responses?",
+          "keyPoints": [
+            "Cache-Control says who may cache a response and for how long (max-age, private, public, no-store)",
+            "no-cache allows storing but requires revalidation before each use",
+            "The server sends an ETag identifying the version of the representation",
+            "The client revalidates with If-None-Match, and the server answers 304 Not Modified without a body when nothing changed"
+          ]
+        },
+        {
+          "id": "rest-if-match", "type": "SCENARIO", "subtopic": "Optimistic concurrency", "levels": [2, 4],
+          "question": "Two users edit the same customer record and both press save; the second save silently overwrites the first. How would you prevent this with HTTP?",
+          "keyPoints": [
+            "It is a lost update",
+            "Return an ETag (or a version) with GET",
+            "The client sends it back in If-Match with its PUT or PATCH",
+            "The server compares it with the current version and answers 412 Precondition Failed when it differs",
+            "On the server this maps to optimistic locking with a version column"
+          ]
+        },
+        {
+          "id": "rest-etag-generation", "type": "INTERNALS", "subtopic": "Conditional requests and ETags", "levels": [3, 4],
+          "question": "What is the difference between strong and weak ETags, and how would you generate ETags for resources stored in a database?",
+          "keyPoints": [
+            "A strong ETag means byte-for-byte identical representations; a weak one (W/ prefix) means equivalent",
+            "Deriving it from a version column or the last-modified time is cheap",
+            "Hashing the representation works for anything, but the body must be built first",
+            "If-None-Match accepts weak comparison; If-Match for updates needs strong comparison"
+          ]
+        },
+        {
+          "id": "rest-stale-prices", "type": "DEBUGGING", "subtopic": "HTTP caching", "levels": [2, 4],
+          "question": "After an update, some users keep seeing the old product price for several minutes while others already see the new one. What could cause it?",
+          "keyPoints": [
+            "A cached response is served by a browser, CDN or proxy until its max-age expires",
+            "The response was marked cacheable for too long",
+            "Different users hit different caches or edge locations",
+            "Use a short max-age or no-cache with ETag revalidation for changing data, and purge the CDN on update"
+          ]
+        },
+        {
+          "id": "rest-problem-details", "type": "CONCEPT", "subtopic": "Error responses", "levels": [2, 3],
+          "question": "What should a good REST error response contain? Describe the problem details format.",
+          "keyPoints": [
+            "An accurate HTTP status",
+            "A machine-readable error type or code, a short title and a human-readable detail",
+            "Field-level errors for validation failures",
+            "RFC 9457 problem details (application/problem+json) standardise type, title, status, detail and instance, with extensions",
+            "A correlation id, and no internal details or stack traces"
+          ]
+        },
+        {
+          "id": "rest-list-endpoint", "type": "SCENARIO", "subtopic": "Pagination and filtering", "levels": [2, 4],
+          "question": "Design the list endpoint of a transactions resource with filters on date range and status, sorting, and pagination over millions of rows.",
+          "keyPoints": [
+            "GET /transactions with query parameters for the filters, the sort and a page size limit",
+            "Cursor (keyset) pagination with an opaque next cursor for large data, ordered by a unique key",
+            "A maximum page size",
+            "The response includes the next cursor or link",
+            "The filter and sort columns are indexed, and the parameters are validated"
+          ]
+        },
+        {
+          "id": "rest-versioning", "type": "CONCEPT", "subtopic": "Versioning and compatibility", "levels": [2, 4],
+          "question": "How do you evolve a REST API without breaking existing clients, and when do you need a new version?",
+          "keyPoints": [
+            "Additive changes are compatible: new optional fields and new endpoints",
+            "Clients must ignore fields they do not know (tolerant reader)",
+            "Removing or renaming fields, or changing their types or meaning, breaks clients and needs a new version (URL, header or media type)",
+            "Deprecate with notice and a sunset date, and run the versions side by side",
+            "Compare OpenAPI contracts or run contract tests in CI"
+          ]
+        },
+        {
+          "id": "rest-type-change", "type": "DEBUGGING", "subtopic": "Versioning and compatibility", "levels": [2, 4],
+          "question": "After a backend release, a client breaks because a numeric id is now returned as a string, although no field was removed. How should this have been caught, and how should the change have been made?",
+          "keyPoints": [
+            "Changing a field's type is a breaking change",
+            "A published contract (OpenAPI) compared in CI detects it",
+            "Consumer-driven contract tests (for example Pact) check what clients actually rely on",
+            "Add a new field or a new version instead of changing the type in place"
+          ]
+        }
+      ]
+    }
+  ]
+}

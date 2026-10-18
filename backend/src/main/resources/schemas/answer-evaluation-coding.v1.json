@@ -1,0 +1,170 @@
+{
+  "type": "object",
+  "description": "The review of one coding solution: component assessments and the solution's complexity. There is no score: the system computes it from the ratings, the test results it measured itself, the verified key points and the factual errors.",
+  "properties": {
+    "keyPoints": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "One verdict for every expected key point, judged before the ratings.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "keyPointId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COVERED",
+              "PARTIAL",
+              "MISSING"
+            ]
+          },
+          "evidenceQuote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The candidate's own words, copied exactly, that show the key point; null when MISSING."
+          }
+        },
+        "required": [
+          "keyPointId",
+          "status",
+          "evidenceQuote"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "codeAnalysis": {
+      "type": "object",
+      "description": "What the solution does, decided before the ratings.",
+      "properties": {
+        "approach": {
+          "type": "string",
+          "description": "One sentence: the algorithm and data structures the solution uses, at most 300 characters."
+        },
+        "timeComplexity": {
+          "type": "string",
+          "description": "The solution's worst-case time complexity in Big-O notation, for example O(n log n)."
+        },
+        "spaceComplexity": {
+          "type": "string",
+          "description": "The extra memory the solution uses in Big-O notation, for example O(n)."
+        }
+      },
+      "required": [
+        "approach",
+        "timeComplexity",
+        "spaceComplexity"
+      ],
+      "additionalProperties": false
+    },
+    "factualErrors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "What the candidate said that is wrong."
+          },
+          "correction": {
+            "type": "string",
+            "description": "What is true."
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            },
+            "description": "Tokens (r1, r2, ...) of the reference passages that support the correction; empty when it is judged from your own knowledge."
+          },
+          "repeats": {
+            "type": "array",
+            "maxItems": 1,
+            "items": {
+              "type": "string"
+            },
+            "description": "The token (m1, m2, ...) of the earlier mistake of this interview that this statement repeats; empty when it repeats none."
+          }
+        },
+        "required": [
+          "claim",
+          "correction",
+          "sources",
+          "repeats"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Misconceptions: technically wrong statements in the answer."
+    },
+    "ratings": {
+      "type": "object",
+      "description": "One rating per criterion of the rubric (filled in per request).",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "candidateClaims": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      },
+      "description": "Statements the candidate made about their own experience, at most 300 characters each."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One sentence, at most 500 characters, on what the answer showed."
+    },
+    "flags": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "enum": [
+          "INJECTION_SUSPECTED",
+          "OFF_TOPIC",
+          "LANGUAGE_MISMATCH"
+        ]
+      }
+    },
+    "confidence": {
+      "type": "object",
+      "description": "How sure you are of this judgement, decided last. It is your own estimate and changes no rating.",
+      "properties": {
+        "reason": {
+          "type": "string",
+          "description": "One short sentence: what makes the judgement easy or hard to be sure of; at most 300 characters."
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "HIGH",
+            "MEDIUM",
+            "LOW"
+          ]
+        }
+      },
+      "required": [
+        "reason",
+        "level"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "keyPoints",
+    "codeAnalysis",
+    "factualErrors",
+    "ratings",
+    "candidateClaims",
+    "summary",
+    "flags",
+    "confidence"
+  ],
+  "additionalProperties": false
+}

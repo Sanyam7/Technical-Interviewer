@@ -1,0 +1,57 @@
+{
+  "id": "video-streaming",
+  "title": "Design a video streaming platform",
+  "levels": [
+    4,
+    5
+  ],
+  "statement": "Design a platform like YouTube. Creators upload videos, the platform processes them, and viewers around the world watch them on phones, TVs and browsers with smooth playback. Viewers see view counts and can search the catalogue.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "500 hours of video are uploaded every minute.",
+    "1 billion views per day; most views go to a small share of popular videos.",
+    "Playback should start within 2 seconds and adapt to the viewer's bandwidth."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "sends uploads straight to object storage (resumable, for example with pre-signed URLs) instead of through the application servers"
+    },
+    {
+      "id": "kp2",
+      "text": "transcodes asynchronously through a queue and workers into several resolutions and bitrates, cut into segments"
+    },
+    {
+      "id": "kp3",
+      "text": "uses adaptive bitrate streaming (HLS or DASH) with manifests, so the player switches quality with the bandwidth"
+    },
+    {
+      "id": "kp4",
+      "text": "serves the video segments from a CDN close to viewers, with object storage as the origin"
+    },
+    {
+      "id": "kp5",
+      "text": "estimates storage and bandwidth: petabytes of new video per year and terabits per second of traffic at peak"
+    },
+    {
+      "id": "kp6",
+      "text": "keeps metadata (title, owner, processing status) in a database apart from the media, with a search index for the catalogue"
+    },
+    {
+      "id": "kp7",
+      "text": "counts views approximately and asynchronously from a stream of events, not with a database write per view"
+    },
+    {
+      "id": "kp8",
+      "text": "makes transcoding jobs idempotent and retryable, and tracks the processing status of each video"
+    }
+  ],
+  "probes": {
+    "SCALABILITY": "A new music video gets 50 million views in its first hour. What in your design serves that, and what breaks first?",
+    "MESSAGING": "An upload has just finished. What happens, step by step, before the video can be watched?",
+    "FAILURE_HANDLING": "A transcoding worker crashes halfway through a two-hour video. What happens to that video?",
+    "CACHING": "How does your CDN strategy differ between a viral video and a video watched three times a year?",
+    "DATA_MODEL": "Where do you store video metadata, view counts and the video files themselves, and why there?",
+    "OBSERVABILITY": "Viewers in one country complain that playback keeps buffering. How would you find out why?",
+    "SECURITY": "How do you stop people from downloading paid videos or embedding your streams on other sites?"
+  }
+}

@@ -1,0 +1,111 @@
+{
+  "type": "object",
+  "description": "The judgement of one answer. There is no score: the system computes it from the ratings.",
+  "properties": {
+    "keyPoints": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "One verdict for every expected key point, judged before the ratings.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "keyPointId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COVERED",
+              "PARTIAL",
+              "MISSING"
+            ]
+          },
+          "evidenceQuote": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The candidate's own words, copied exactly, that show the key point; null when MISSING."
+          }
+        },
+        "required": [
+          "keyPointId",
+          "status",
+          "evidenceQuote"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "factualErrors": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "properties": {
+          "claim": {
+            "type": "string",
+            "description": "What the candidate said that is wrong."
+          },
+          "correction": {
+            "type": "string",
+            "description": "What is true."
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            },
+            "description": "Tokens (r1, r2, ...) of the reference passages that support the correction; empty when it is judged from your own knowledge."
+          }
+        },
+        "required": [
+          "claim",
+          "correction",
+          "sources"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "ratings": {
+      "type": "object",
+      "description": "One rating per criterion of the rubric (filled in per request).",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "candidateClaims": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "string"
+      },
+      "description": "Statements the candidate made about their own experience, at most 300 characters each."
+    },
+    "summary": {
+      "type": "string",
+      "description": "One sentence, at most 500 characters, on what the answer showed."
+    },
+    "flags": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "string",
+        "enum": [
+          "INJECTION_SUSPECTED",
+          "OFF_TOPIC",
+          "LANGUAGE_MISMATCH"
+        ]
+      }
+    }
+  },
+  "required": [
+    "keyPoints",
+    "factualErrors",
+    "ratings",
+    "candidateClaims",
+    "summary",
+    "flags"
+  ],
+  "additionalProperties": false
+}

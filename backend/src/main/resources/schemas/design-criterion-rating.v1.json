@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "description": "The rating of one design dimension: the reason, the candidate's own words it rests on, then the rating.",
+  "properties": {
+    "rationale": {
+      "type": "string",
+      "description": "Why this rating, citing what the design does or leaves out for this dimension; at most 2000 characters."
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 2,
+      "items": {
+        "type": "string"
+      },
+      "description": "Up to 2 short quotes, each at most 300 characters, copied exactly from the candidate's answers or diagram, that show what the design does for this dimension. Empty when the candidate wrote nothing about it."
+    },
+    "rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 4,
+      "description": "0 not addressed or wrong, 1 weak, 2 adequate, 3 strong, 4 expert."
+    }
+  },
+  "required": [
+    "rationale",
+    "evidence",
+    "rating"
+  ],
+  "additionalProperties": false
+}

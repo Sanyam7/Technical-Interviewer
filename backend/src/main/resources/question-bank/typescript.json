@@ -1,0 +1,277 @@
+{
+  "skill": "typescript",
+  "topics": [
+    {
+      "topic": "type-system-basics",
+      "subtopics": ["interface versus type", "any, unknown and never", "Union and intersection types", "Structural typing"],
+      "misconceptions": [
+        "TypeScript types are checked at runtime",
+        "interface and type are completely interchangeable",
+        "any and unknown are the same thing"
+      ],
+      "references": ["typescript/type-system-basics.md"],
+      "templates": [
+        {
+          "id": "ts-interface-vs-type", "type": "CONCEPT", "subtopic": "interface versus type", "levels": [1, 3],
+          "question": "What is the difference between an interface and a type alias in TypeScript, and when would you use each?",
+          "keyPoints": [
+            "Both describe object shapes and are mostly interchangeable for objects",
+            "An interface can be extended with extends and merged by declaring it again (declaration merging), for example to augment library types",
+            "A type alias can name unions, intersections, tuples, primitives and mapped or conditional types",
+            "A common convention: interfaces for object contracts, type aliases for unions and compositions",
+            "Both exist only at compile time"
+          ]
+        },
+        {
+          "id": "ts-any-unknown-never", "type": "CONCEPT", "subtopic": "any, unknown and never", "levels": [1, 3],
+          "question": "What is the difference between any, unknown and never?",
+          "keyPoints": [
+            "any switches off type checking for the value: anything can be assigned to it and anything done with it",
+            "unknown accepts any value but must be narrowed before it is used, which makes it the safe type for untrusted input",
+            "never has no values: a function that always throws, or a branch that cannot happen",
+            "Assigning to never in the default branch of a switch makes the compiler report union members that are not handled"
+          ]
+        },
+        {
+          "id": "ts-union-intersection", "type": "INTERNALS", "subtopic": "Union and intersection types", "levels": [2, 3],
+          "question": "What are union and intersection types? What can you do with a value of type A | B without narrowing it?",
+          "keyPoints": [
+            "A union A | B is a value of one of the types",
+            "Without narrowing, only the members common to every type of the union can be used",
+            "An intersection A & B has the members of both types",
+            "Intersecting incompatible types, such as string & number, gives never",
+            "A discriminated union uses a shared literal property to tell its members apart"
+          ]
+        },
+        {
+          "id": "ts-branded-ids", "type": "DEBUGGING", "subtopic": "Structural typing", "levels": [2, 3],
+          "question": "A function expects a UserId, but the code passes an OrderId and the compiler accepts it, which causes a bug. Both are type aliases of string. Why, and how can the types prevent it?",
+          "keyPoints": [
+            "TypeScript is structurally typed: types with the same structure are compatible",
+            "A type alias does not create a new type, so both are plain string",
+            "A branded type such as string & { readonly __brand: 'UserId' } makes them incompatible",
+            "Values of a branded type are created by a validating constructor function"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "narrowing-type-guards",
+      "subtopics": ["Type narrowing", "Discriminated unions", "User-defined type guards", "Untrusted data"],
+      "misconceptions": [
+        "A type assertion with as checks the value at runtime",
+        "typeof null is 'null'",
+        "The compiler verifies that a user-defined type guard is correct"
+      ],
+      "references": ["typescript/narrowing-type-guards.md"],
+      "templates": [
+        {
+          "id": "ts-narrowing", "type": "CONCEPT", "subtopic": "Type narrowing", "levels": [2, 3],
+          "question": "What is type narrowing in TypeScript? Which constructs narrow a union type?",
+          "keyPoints": [
+            "The compiler refines the type of a value inside a branch, based on control flow",
+            "typeof narrows primitives (typeof null is 'object'), instanceof narrows classes, in narrows by property",
+            "Equality and truthiness checks narrow, and so do checks of a discriminant property",
+            "Assignments narrow too, and the narrowing can be lost inside callbacks"
+          ]
+        },
+        {
+          "id": "ts-request-state", "type": "SCENARIO", "subtopic": "Discriminated unions", "levels": [2, 4],
+          "question": "Model the state of a data request that can be idle, loading, successful with data, or failed with an error, so that invalid combinations cannot be represented.",
+          "keyPoints": [
+            "A discriminated union with a literal status property, one member per state",
+            "Data exists only on the success member and the error only on the error member",
+            "Switching on status narrows each case",
+            "An exhaustive check with never catches states that are not handled",
+            "This prevents impossible states that separate isLoading, data and error fields allow"
+          ]
+        },
+        {
+          "id": "ts-type-predicates", "type": "INTERNALS", "subtopic": "User-defined type guards", "levels": [3, 4],
+          "question": "How do user-defined type guards (value is T) work, and what is their risk?",
+          "keyPoints": [
+            "A function that returns a type predicate value is T narrows the argument in the branch where it returned true",
+            "The compiler trusts the predicate and does not check the function's implementation",
+            "A wrong check gives a wrong type and errors at runtime",
+            "Assertion functions (asserts value is T) narrow by throwing",
+            "For external data a schema validator (such as zod) that derives the type is safer"
+          ]
+        },
+        {
+          "id": "ts-unsafe-api-response", "type": "DEBUGGING", "subtopic": "Untrusted data", "levels": [2, 4],
+          "question": "Code does const user = (await res.json()) as User and later crashes with \"cannot read properties of undefined\", although it type-checks. Why, and how do you handle API responses safely?",
+          "keyPoints": [
+            "res.json() returns an untyped value, and as only asserts the type to the compiler",
+            "Nothing checks the data at runtime, so a different shape passes unnoticed",
+            "Treat the body as unknown and validate it at the boundary with a schema (zod, valibot)",
+            "Check res.ok and handle error responses before parsing the body",
+            "Handle optional fields explicitly"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "generics",
+      "subtopics": ["Generic functions and types", "Constraints and keyof", "Generic React components and hooks", "Inference"],
+      "misconceptions": [
+        "Generic type parameters exist at runtime",
+        "Every function with a parameter should be generic",
+        "Explicit type arguments are always needed"
+      ],
+      "references": ["typescript/generics.md"],
+      "templates": [
+        {
+          "id": "ts-generics-basics", "type": "CONCEPT", "subtopic": "Generic functions and types", "levels": [2, 3],
+          "question": "What are generics in TypeScript, and why are they better than any for a reusable function?",
+          "keyPoints": [
+            "Type parameters let a function or type work with many types while keeping the relation between input and output types",
+            "With any the result type is lost and mistakes are not caught",
+            "The type argument is usually inferred from the arguments at the call site",
+            "Example: function first<T>(items: T[]): T | undefined",
+            "Constraints restrict what the type parameter may be"
+          ]
+        },
+        {
+          "id": "ts-keyof-constraints", "type": "INTERNALS", "subtopic": "Constraints and keyof", "levels": [3, 4],
+          "question": "How do generic constraints with extends and keyof work? Write the signature of a getProperty(obj, key) function that returns the property's exact type.",
+          "keyPoints": [
+            "T extends X restricts T to types assignable to X, so X's members can be used",
+            "keyof T is the union of T's property names",
+            "function getProperty<T, K extends keyof T>(obj: T, key: K): T[K]",
+            "T[K] is an indexed access type: the type of that property",
+            "An invalid key is a compile-time error"
+          ]
+        },
+        {
+          "id": "ts-generic-select", "type": "SCENARIO", "subtopic": "Generic React components and hooks", "levels": [3, 5],
+          "question": "Write the props type of a reusable Select component that works with any type of option and passes the selected option to onChange with its type.",
+          "keyPoints": [
+            "A generic props type, for example SelectProps<T> with options: T[], value: T | null and onChange: (value: T) => void",
+            "Functions to get a label and a key from an option, since T is unknown to the component",
+            "A generic component function, function Select<T>(props: SelectProps<T>)",
+            "T is inferred from the options at the call site, so callers need no casts"
+          ]
+        },
+        {
+          "id": "ts-widened-inference", "type": "DEBUGGING", "subtopic": "Inference", "levels": [3, 5],
+          "question": "A generic function's result is inferred as string, or unknown[], where you expected specific literal types. What influences generic inference, and how can you guide it?",
+          "keyPoints": [
+            "Type arguments are inferred from the arguments; with nothing to infer from, T falls back to its constraint or unknown",
+            "Literal values widen to their base type unless the context keeps them",
+            "as const, or a const type parameter (TypeScript 5), keeps literal types",
+            "Explicit type arguments or better constraints guide the inference"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "utility-mapped-conditional-types",
+      "subtopics": ["Utility types", "Mapped types", "Conditional types and infer", "Template literal types"],
+      "misconceptions": [
+        "Partial makes nested properties optional too",
+        "Readonly makes an object immutable at runtime",
+        "Omit checks that the keys it removes exist"
+      ],
+      "references": ["typescript/utility-mapped-conditional-types.md"],
+      "templates": [
+        {
+          "id": "ts-utility-types", "type": "CONCEPT", "subtopic": "Utility types", "levels": [3, 4],
+          "question": "How would you use Partial, Pick, Omit and Record to derive the types of an update request, a summary view and a lookup table from a User type?",
+          "keyPoints": [
+            "Partial<User> makes every property optional, shallowly: an update payload",
+            "Pick<User, 'id' | 'name'> keeps chosen properties: a summary view",
+            "Omit<User, 'password'> removes properties; its keys are not checked against User",
+            "Record<UserId, User> maps keys to values: a lookup table",
+            "Derived types stay in sync when User changes"
+          ]
+        },
+        {
+          "id": "ts-mapped-types", "type": "INTERNALS", "subtopic": "Mapped types", "levels": [4, 5],
+          "question": "How are mapped types built? Write a type that makes every property of T nullable.",
+          "keyPoints": [
+            "A mapped type iterates over keys: { [K in keyof T]: ... }",
+            "type Nullable<T> = { [K in keyof T]: T[K] | null }",
+            "Modifiers add or remove readonly and ? (-readonly, -?)",
+            "Keys can be remapped with as",
+            "Partial, Readonly and Record are mapped types"
+          ]
+        },
+        {
+          "id": "ts-conditional-infer", "type": "INTERNALS", "subtopic": "Conditional types and infer", "levels": [4, 5],
+          "question": "What are conditional types and infer? How would you extract the type a Promise resolves to?",
+          "keyPoints": [
+            "T extends U ? X : Y picks a type depending on assignability",
+            "infer introduces a type variable inside the extends clause",
+            "type Unwrap<T> = T extends Promise<infer R> ? R : T; the built-in Awaited does this recursively",
+            "Conditional types distribute over unions when T is a naked type parameter",
+            "ReturnType and Parameters are built with infer"
+          ]
+        },
+        {
+          "id": "ts-typed-events", "type": "SCENARIO", "subtopic": "Template literal types", "levels": [3, 5],
+          "question": "You want type-safe event names such as 'user:created' and 'order:paid', each with its own payload, and a handler map that must have a handler for every event. How would you type it?",
+          "keyPoints": [
+            "A map type from event name to payload type, for example EventPayloads = { 'user:created': User; 'order:paid': Payment }",
+            "Template literal types such as `${Entity}:${Action}` can build the names",
+            "A mapped type { [E in keyof EventPayloads]: (payload: EventPayloads[E]) => void } requires a handler for every event",
+            "emit<E extends keyof EventPayloads>(event: E, payload: EventPayloads[E]) ties each name to its payload"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "strictness-tooling",
+      "subtopics": ["Strict mode", "Declaration files", "Migrating JavaScript", "Build configuration"],
+      "misconceptions": [
+        "Code that compiles cannot have type errors at runtime",
+        "strict mode changes the emitted JavaScript",
+        "strict mode can be turned on later at no cost"
+      ],
+      "references": ["typescript/strictness-tooling.md"],
+      "templates": [
+        {
+          "id": "ts-strict-mode", "type": "CONCEPT", "subtopic": "Strict mode", "levels": [1, 3],
+          "question": "What does the strict flag in tsconfig turn on, and why does strictNullChecks matter so much?",
+          "keyPoints": [
+            "strict enables a family of checks, among them strictNullChecks, noImplicitAny, strictFunctionTypes and strictPropertyInitialization",
+            "With strictNullChecks null and undefined are separate types that must be handled, which catches the most common runtime error",
+            "noImplicitAny reports parameters and values that would silently be any",
+            "These options change type checking only, not the emitted JavaScript"
+          ]
+        },
+        {
+          "id": "ts-migration", "type": "SCENARIO", "subtopic": "Migrating JavaScript", "levels": [2, 3],
+          "question": "How would you migrate a medium-sized JavaScript codebase to TypeScript without stopping feature work?",
+          "keyPoints": [
+            "Migrate incrementally: allowJs, then convert files one by one",
+            "Start with looser compiler options and tighten them module by module up to strict",
+            "Type the boundaries first: API clients, shared utilities, data models",
+            "Use @types packages or declaration files for untyped libraries",
+            "Run the type check in CI so the migrated code stays checked"
+          ]
+        },
+        {
+          "id": "ts-declaration-files", "type": "CONCEPT", "subtopic": "Declaration files", "levels": [2, 3],
+          "question": "What are .d.ts files, and when do you need to write one?",
+          "keyPoints": [
+            "They describe the types of JavaScript code without implementation",
+            "Libraries ship them, or the community provides them as @types packages (DefinitelyTyped)",
+            "You write one for an untyped library or for globals",
+            "Module augmentation extends the types of an existing library",
+            "They are used only at compile time"
+          ]
+        },
+        {
+          "id": "ts-path-alias", "type": "DEBUGGING", "subtopic": "Build configuration", "levels": [1, 3],
+          "question": "The editor shows no errors, but the CI build fails with \"Cannot find module\" for an import that uses a path alias such as @/components. What would you check?",
+          "keyPoints": [
+            "paths in tsconfig only teach the type checker the alias",
+            "The bundler, the test runner or Node need the same alias in their own configuration (Vite resolve.alias, Jest moduleNameMapper)",
+            "CI may build with another tsconfig, such as tsconfig.build.json",
+            "A case-sensitive file system in CI exposes imports whose case differs from the file name"
+          ]
+        }
+      ]
+    }
+  ]
+}

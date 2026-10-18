@@ -1,0 +1,3 @@
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.techinterviewer.config.MissingDatabasePasswordFailureAnalyzer,\
+com.techinterviewer.security.MissingJwtSecretFailureAnalyzer

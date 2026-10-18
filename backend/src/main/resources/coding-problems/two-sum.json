@@ -1,0 +1,61 @@
+{
+  "id": "two-sum",
+  "title": "Two Sum",
+  "difficulty": 2,
+  "statement": "Given an array of integers `nums` and an integer `target`, return the indices of the two numbers that add up to `target`.\n\nExactly one pair adds up to `target`, and you may not use the same element twice. Return the two indices in increasing order.",
+  "constraints": [
+    "2 <= nums.length <= 2 * 10^5",
+    "-10^9 <= nums[i] <= 10^9",
+    "-10^9 <= target <= 10^9",
+    "Exactly one valid answer exists"
+  ],
+  "signature": {
+    "name": "twoSum",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "target",
+        "type": "int"
+      }
+    ],
+    "returns": "int[]"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(n)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Uses a hash map from value to index to find each complement in O(1)"
+    },
+    {
+      "id": "kp2",
+      "text": "Checks for the complement before inserting the current element, so an element is not paired with itself"
+    },
+    {
+      "id": "kp3",
+      "text": "Handles duplicate values and negative numbers"
+    },
+    {
+      "id": "kp4",
+      "text": "Avoids the O(n^2) pairwise comparison"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[2, 7, 11, 15], 9], "expected": [0, 1], "explanation": "nums[0] + nums[1] == 9."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[3, 2, 4], 6], "expected": [1, 2]},
+    {"name": "negative numbers", "category": "GENERAL", "args": [[-1, -2, -3, -4, -5], -8], "expected": [2, 4]},
+    {"name": "pair in the middle", "category": "GENERAL", "args": [[10, 26, 30, 31, 47, 60], 61], "expected": [2, 3]},
+    {"name": "large values", "category": "GENERAL", "args": [[1000000000, 5, -1000000000, 3], 8], "expected": [1, 3]},
+    {"name": "two equal values", "category": "EDGE", "args": [[3, 3], 6], "expected": [0, 1]},
+    {"name": "zeros", "category": "EDGE", "args": [[0, 4, 3, 0], 0], "expected": [0, 3]},
+    {"name": "repeated value is the answer", "category": "EDGE", "args": [[2, 5, 5, 11], 10], "expected": [1, 2]},
+    {"name": "pair at the end of a large array", "category": "PERFORMANCE", "args": [{"$range": [1, 200000]}, 399999], "expected": [199998, 199999]}
+  ]
+}

@@ -1,0 +1,504 @@
+{
+  "skill": "java",
+  "topics": [
+    {
+      "topic": "core-language-oop",
+      "subtopics": ["equals and hashCode", "Immutability", "Parameter passing and references", "Interfaces and abstract classes", "Inheritance and composition", "String handling", "Records and enums"],
+      "misconceptions": [
+        "Overriding equals without overriding hashCode is harmless",
+        "Java passes objects by reference",
+        "A final field makes the object it refers to immutable",
+        "== compares the contents of two strings"
+      ],
+      "references": ["java/core-language-oop.md"],
+      "templates": [
+        {
+          "id": "java-equals-hashcode-contract", "type": "CONCEPT", "subtopic": "equals and hashCode", "levels": [1, 3],
+          "question": "What is the contract between equals() and hashCode(), and what goes wrong in a HashSet or HashMap when a class overrides only one of them?",
+          "keyPoints": [
+            "Objects that are equal according to equals must return the same hashCode; unequal objects may share a hash code",
+            "equals must be reflexive, symmetric, transitive and consistent, and return false for null",
+            "Overriding equals without hashCode lets two equal objects land in different buckets, so lookups fail and a HashSet can hold duplicates",
+            "Fields used by equals and hashCode must not change while the object is a key in a hash-based collection"
+          ]
+        },
+        {
+          "id": "java-immutable-class", "type": "CONCEPT", "subtopic": "Immutability", "levels": [2, 3],
+          "question": "How do you make a class immutable in Java, and why are immutable objects useful in concurrent code?",
+          "keyPoints": [
+            "Make the class final (or its constructor private) so subclasses cannot add mutable behaviour",
+            "Make all fields private and final and provide no setters",
+            "Copy mutable inputs in the constructor and never return internal mutable objects without copying them (defensive copies)",
+            "Immutable objects can be shared between threads without synchronization, because their state never changes after construction",
+            "A record is only shallowly immutable: a mutable component such as a List can still change"
+          ]
+        },
+        {
+          "id": "java-pass-by-value", "type": "INTERNALS", "subtopic": "Parameter passing and references", "levels": [1, 3],
+          "question": "Is Java pass-by-value or pass-by-reference? Explain what happens when a method reassigns a parameter that refers to a list, and when it adds an element to that list.",
+          "keyPoints": [
+            "Java always passes arguments by value",
+            "For an object, the value passed is a copy of the reference, so caller and method point to the same object",
+            "Reassigning the parameter only changes the method's local copy of the reference; the caller does not see it",
+            "Changing the object through the reference (adding to the list) is visible to the caller"
+          ]
+        },
+        {
+          "id": "java-interface-vs-abstract", "type": "CONCEPT", "subtopic": "Interfaces and abstract classes", "levels": [1, 3],
+          "question": "When would you use an abstract class instead of an interface in modern Java, given that interfaces can have default methods?",
+          "keyPoints": [
+            "A class can implement many interfaces but extend only one class",
+            "An abstract class can hold instance state and constructors; an interface cannot hold instance fields",
+            "Interfaces define a type or capability, and default methods let an interface evolve without breaking implementations",
+            "Prefer interfaces for types; use an abstract class to share state and implementation inside one class hierarchy"
+          ]
+        },
+        {
+          "id": "java-composition-over-inheritance", "type": "SCENARIO", "subtopic": "Inheritance and composition", "levels": [2, 3],
+          "question": "A teammate wants an InstrumentedHashSet that counts added elements by extending HashSet and overriding add and addAll. What could go wrong, and how would you design it instead?",
+          "keyPoints": [
+            "HashSet's addAll (inherited from AbstractCollection) calls add for each element, so elements are counted twice",
+            "Inheritance couples the subclass to implementation details of the superclass that can change (fragile base class)",
+            "Composition is safer: wrap a Set, implement the Set interface and forward calls to the wrapped instance",
+            "The wrapper counts in add and addAll without depending on how the wrapped set implements them"
+          ]
+        },
+        {
+          "id": "java-string-equality-bug", "type": "DEBUGGING", "subtopic": "String handling", "levels": [1, 2],
+          "question": "A role check written as if (role == \"ADMIN\") passes in unit tests but fails in production, where the role is read from the database. Why, and how do you fix it?",
+          "keyPoints": [
+            "== compares references, not string contents",
+            "String literals are interned, so in the tests both sides are the same object",
+            "A string read at runtime is a different object with the same characters, so == is false",
+            "Compare with equals (\"ADMIN\".equals(role) also avoids a NullPointerException), or model roles as an enum"
+          ]
+        },
+        {
+          "id": "java-records", "type": "CONCEPT", "subtopic": "Records and enums", "levels": [2, 3],
+          "question": "What does a Java record give you over a hand-written class, and what are its limits?",
+          "keyPoints": [
+            "A record declares its components once and gets a canonical constructor, accessors, equals, hashCode and toString from them",
+            "Its fields are private and final, so it is a transparent carrier of immutable (shallowly) data",
+            "A record cannot extend another class but can implement interfaces",
+            "A compact constructor can validate or normalise the components",
+            "A mutable component such as a List stays mutable unless the constructor copies it"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "collections",
+      "subtopics": ["HashMap internals", "List implementations", "Concurrent collections", "Iteration and fail-fast behaviour", "Choosing a collection", "Sorted collections"],
+      "misconceptions": [
+        "HashMap keeps its keys in insertion order",
+        "LinkedList is faster than ArrayList for most insertions",
+        "ConcurrentHashMap locks the whole map on every write",
+        "Collections.unmodifiableList makes a list immutable",
+        "A HashMap lookup is O(1) in every case"
+      ],
+      "references": ["java/collections.md"],
+      "templates": [
+        {
+          "id": "java-hashmap-internals", "type": "INTERNALS", "subtopic": "HashMap internals", "levels": [2, 4],
+          "question": "How does HashMap store and find an entry? Walk through put and get, and explain what happens when two keys have the same hash code.",
+          "keyPoints": [
+            "The key's hashCode is spread and mapped to an index in an array of buckets",
+            "Keys in the same bucket are kept in a linked list, which becomes a balanced tree once a bucket holds more than 8 entries and the table has at least 64 buckets",
+            "equals decides whether an entry in the bucket is the key looked for; hashCode only narrows the search to a bucket",
+            "When the size exceeds capacity times the load factor (0.75 by default) the table doubles and the entries are redistributed",
+            "With well-distributed hashes get and put are O(1) on average; many collisions degrade a bucket to O(log n) with tree bins, or O(n) without"
+          ]
+        },
+        {
+          "id": "java-arraylist-vs-linkedlist", "type": "CONCEPT", "subtopic": "List implementations", "levels": [1, 3],
+          "question": "What is the difference between ArrayList and LinkedList, and why is ArrayList the better default in most code?",
+          "keyPoints": [
+            "ArrayList is backed by a resizable array: O(1) access by index, amortised O(1) append, O(n) insert or remove in the middle because elements shift",
+            "LinkedList is a doubly linked list: O(n) access by index; insert or remove is O(1) only once you are at the node, for example through an iterator",
+            "ArrayList has better memory locality and less overhead per element, so it is usually faster in practice",
+            "For a queue or stack, ArrayDeque is usually a better choice than LinkedList"
+          ]
+        },
+        {
+          "id": "java-concurrenthashmap-vs-hashtable", "type": "CONCEPT", "subtopic": "Concurrent collections", "levels": [2, 4],
+          "question": "How does ConcurrentHashMap differ from Hashtable and from Collections.synchronizedMap, and when does the difference matter?",
+          "keyPoints": [
+            "Hashtable and synchronizedMap use one lock for the whole map, so only one thread uses it at a time",
+            "ConcurrentHashMap lets reads proceed without locking and locks only the bin being written (empty bins are filled with CAS)",
+            "Its iterators are weakly consistent and never throw ConcurrentModificationException",
+            "Check-then-act sequences still need its atomic methods such as putIfAbsent, computeIfAbsent or merge",
+            "It allows neither null keys nor null values"
+          ]
+        },
+        {
+          "id": "java-concurrent-modification", "type": "DEBUGGING", "subtopic": "Iteration and fail-fast behaviour", "levels": [1, 3],
+          "question": "A loop that removes inactive users from an ArrayList by calling list.remove(user) inside a for-each loop throws ConcurrentModificationException. Why, and what are the correct ways to do it?",
+          "keyPoints": [
+            "The for-each loop uses an iterator that checks the list's modification count and fails fast when the list changes outside the iterator",
+            "Remove through the iterator with Iterator.remove, or use removeIf with a predicate",
+            "Alternatively build a new filtered list, or collect the elements to remove and remove them after the loop",
+            "Concurrent collections such as CopyOnWriteArrayList have iterators that do not throw, at a different cost"
+          ]
+        },
+        {
+          "id": "java-lru-cache", "type": "SCENARIO", "subtopic": "Choosing a collection", "levels": [2, 4],
+          "question": "You need an in-memory cache of the 1,000 most recently used product records, looked up by id, evicting the least recently used one when it is full. Which Java collection would you build it on, and how?",
+          "keyPoints": [
+            "LinkedHashMap with access order (the accessOrder constructor flag) keeps entries ordered by most recent access",
+            "Overriding removeEldestEntry to return true when the size exceeds the limit evicts the least recently used entry",
+            "get and put stay O(1) on average",
+            "It is not thread-safe: shared use needs synchronization or a concurrent cache library such as Caffeine"
+          ]
+        },
+        {
+          "id": "java-mutable-map-key", "type": "DEBUGGING", "subtopic": "HashMap internals", "levels": [2, 4],
+          "question": "Entries put into a HashMap can no longer be found with get, although the same key object is used. The key class bases equals and hashCode on its fields. What is the likely cause, and how do you prevent it?",
+          "keyPoints": [
+            "A field used in hashCode was changed after the key was inserted, so the key now hashes to a different bucket",
+            "The entry is still stored under the old bucket, so get searches the wrong one and returns null",
+            "The map can then end up holding the same logical key twice",
+            "Map keys should be immutable, for example records or value objects, or at least never change the fields used by equals and hashCode"
+          ]
+        },
+        {
+          "id": "java-treemap", "type": "CONCEPT", "subtopic": "Sorted collections", "levels": [2, 3],
+          "question": "When would you choose a TreeMap over a HashMap, and what does it cost?",
+          "keyPoints": [
+            "TreeMap keeps keys sorted by natural order or a Comparator",
+            "It offers range and navigation operations such as subMap, headMap, ceilingKey and firstKey",
+            "It is a red-black tree, so get, put and remove are O(log n) instead of O(1) on average",
+            "The ordering should be consistent with equals, and natural ordering does not allow a null key"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "generics",
+      "subtopics": ["Type erasure", "Wildcards and PECS", "Bounded type parameters", "Raw types and heap pollution"],
+      "misconceptions": [
+        "List<Integer> is a subtype of List<Number>",
+        "Generic type arguments are available at runtime",
+        "Raw types are just shorter generic types"
+      ],
+      "references": ["java/generics.md"],
+      "templates": [
+        {
+          "id": "java-type-erasure", "type": "INTERNALS", "subtopic": "Type erasure", "levels": [2, 4],
+          "question": "What is type erasure, and what can you not do with a type parameter T because of it?",
+          "keyPoints": [
+            "Type arguments are checked at compile time and removed from the bytecode; T becomes its bound or Object and the compiler inserts casts",
+            "List<String> and List<Integer> are the same class at runtime",
+            "You cannot write new T(), create a T[] directly, or test instanceof List<String>",
+            "Overloads that differ only in their type arguments clash after erasure",
+            "Passing a Class<T> or a factory (Supplier<T>) works around it"
+          ]
+        },
+        {
+          "id": "java-pecs", "type": "CONCEPT", "subtopic": "Wildcards and PECS", "levels": [3, 4],
+          "question": "Why is a List<Integer> not a List<Number>, and when would you write List<? extends Number> and when List<? super Integer>?",
+          "keyPoints": [
+            "Generics are invariant: otherwise code could add a Double to what is really a list of Integer",
+            "? extends T lets you read T values but not add to the collection (a producer)",
+            "? super T lets you add T values; reading gives only Object (a consumer)",
+            "PECS: producer extends, consumer super, as in Collections.copy(List<? super T> dest, List<? extends T> src)"
+          ]
+        },
+        {
+          "id": "java-max-signature", "type": "SCENARIO", "subtopic": "Bounded type parameters", "levels": [3, 4],
+          "question": "Write the signature of a generic method that returns the largest element of any collection whose elements can be compared with each other, and explain each part of it.",
+          "keyPoints": [
+            "A generic method declares its type parameter before the return type",
+            "The bound T extends Comparable<? super T> lets elements compare with each other, including subclasses that inherit compareTo",
+            "A parameter of type Collection<? extends T> accepts collections of any subtype",
+            "This is the shape of Collections.max; an empty collection needs a decision: throw or return Optional"
+          ]
+        },
+        {
+          "id": "java-heap-pollution", "type": "DEBUGGING", "subtopic": "Raw types and heap pollution", "levels": [3, 4],
+          "question": "Code that adds items to a raw List compiles with only a warning, and much later a ClassCastException is thrown at a line that just reads from a List<String>. What happened?",
+          "keyPoints": [
+            "Using a raw type bypasses the generic checks, so a non-String was inserted (heap pollution)",
+            "The compiler inserts a cast where the element is read, so the failure appears at the read, far from the cause",
+            "The unchecked warnings point to the real problem",
+            "Avoid raw types; Collections.checkedList makes a wrong insertion fail immediately"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "exceptions",
+      "subtopics": ["Checked and unchecked exceptions", "try-with-resources", "Exception design", "Error handling in practice"],
+      "misconceptions": [
+        "Catching Exception everywhere makes code more robust",
+        "Checked exceptions are always better because the compiler enforces them",
+        "Logging and rethrowing an exception at every layer helps debugging"
+      ],
+      "references": ["java/exceptions.md"],
+      "templates": [
+        {
+          "id": "java-checked-unchecked", "type": "CONCEPT", "subtopic": "Checked and unchecked exceptions", "levels": [1, 3],
+          "question": "Explain checked versus unchecked exceptions in Java. When would you use each, and why do frameworks such as Spring prefer unchecked exceptions?",
+          "keyPoints": [
+            "Checked exceptions (subclasses of Exception but not of RuntimeException) must be caught or declared; unchecked ones (RuntimeException, Error) need not be",
+            "Checked exceptions suit recoverable conditions the caller is expected to handle, such as I/O failures",
+            "Unchecked exceptions suit programming errors and violated preconditions",
+            "Checked exceptions spread through method signatures of every layer and fit poorly with lambdas and streams, so frameworks wrap them in unchecked ones",
+            "Errors such as OutOfMemoryError are not meant to be caught"
+          ]
+        },
+        {
+          "id": "java-try-with-resources", "type": "INTERNALS", "subtopic": "try-with-resources", "levels": [2, 3],
+          "question": "What does try-with-resources do for you, and what happens when both the try block and the close() call throw an exception?",
+          "keyPoints": [
+            "It works with any AutoCloseable and closes the resources automatically, in reverse order of declaration, even when an exception is thrown",
+            "The exception from the try block is the one that propagates",
+            "The exception thrown by close() is attached to it as a suppressed exception, available through getSuppressed()",
+            "It replaces finally blocks in which an exception from close() could hide the original exception"
+          ]
+        },
+        {
+          "id": "java-exception-translation", "type": "SCENARIO", "subtopic": "Exception design", "levels": [2, 3],
+          "question": "A service method calls a payment client that can throw an IOException. How would you handle that exception so that the caller gets something meaningful, without losing information?",
+          "keyPoints": [
+            "Handle it where something can be done about it: retry, fall back, or report a failure",
+            "Translate it into a meaningful domain or unchecked exception and keep the original as the cause, so the stack trace survives",
+            "Do not swallow it or log it and carry on as if the payment succeeded",
+            "Log it once, at the boundary, rather than at every layer",
+            "At the API boundary map it to an error response with a suitable status"
+          ]
+        },
+        {
+          "id": "java-swallowed-exception", "type": "DEBUGGING", "subtopic": "Error handling in practice", "levels": [1, 3],
+          "question": "Orders are sometimes not saved, but the logs show nothing and the API returns 200. The code wraps the save in catch (Exception e) {}. What is wrong, and how would you fix the error handling?",
+          "keyPoints": [
+            "The empty catch block swallows the failure, so the caller believes the save succeeded",
+            "Catching Exception also hides programming errors such as NullPointerException",
+            "Catch only what can be handled there; otherwise let the exception propagate or translate it",
+            "When handling it, log it with its stack trace and make the API return an error status instead of 200"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "streams-functional",
+      "subtopics": ["Stream pipeline and laziness", "Collectors", "Optional", "Functional interfaces and lambdas", "Parallel streams"],
+      "misconceptions": [
+        "A stream can be reused after its terminal operation",
+        "Parallel streams always make processing faster",
+        "Lambdas in map or forEach can safely change shared state",
+        "Optional is meant for fields and method parameters"
+      ],
+      "references": ["java/streams-functional.md"],
+      "templates": [
+        {
+          "id": "java-stream-laziness", "type": "INTERNALS", "subtopic": "Stream pipeline and laziness", "levels": [2, 4],
+          "question": "How does the Java Stream API process a pipeline such as filter, then map, then findFirst? What does it mean that intermediate operations are lazy?",
+          "keyPoints": [
+            "A pipeline has a source, intermediate operations and exactly one terminal operation",
+            "Intermediate operations only build the pipeline; nothing runs until the terminal operation starts",
+            "Elements flow through the whole pipeline one at a time rather than stage by stage",
+            "Short-circuiting operations such as findFirst or limit stop the processing early",
+            "A stream can be consumed only once"
+          ]
+        },
+        {
+          "id": "java-grouping-collectors", "type": "CONCEPT", "subtopic": "Collectors", "levels": [2, 3],
+          "question": "How would you use streams to group a list of orders by customer and sum each customer's order amounts? Which collectors are involved?",
+          "keyPoints": [
+            "Collectors.groupingBy with the customer as the classifier",
+            "A downstream collector such as summingDouble or summingLong, or reducing for BigDecimal amounts",
+            "The result is a Map from customer to total, a HashMap unless a map factory such as TreeMap::new is given",
+            "Collectors.toMap throws IllegalStateException on duplicate keys unless a merge function is given"
+          ]
+        },
+        {
+          "id": "java-optional", "type": "CONCEPT", "subtopic": "Optional", "levels": [2, 3],
+          "question": "What problem does Optional solve, and how should and should it not be used?",
+          "keyPoints": [
+            "As a return type it signals that a value may be absent, instead of returning null",
+            "Use map, flatMap, orElse, orElseGet and orElseThrow rather than isPresent followed by get",
+            "orElse evaluates its argument even when a value is present; orElseGet only when it is absent",
+            "It is not meant for fields, method parameters or collections",
+            "Optional.of(null) throws; Optional.ofNullable accepts null"
+          ]
+        },
+        {
+          "id": "java-parallel-stream-bug", "type": "DEBUGGING", "subtopic": "Parallel streams", "levels": [3, 4],
+          "question": "After a stream was switched to parallel(), a report that adds results to an ArrayList inside forEach sometimes has missing entries or throws ArrayIndexOutOfBoundsException. Why, and how do you fix it?",
+          "keyPoints": [
+            "A parallel stream runs on several threads of the common ForkJoinPool",
+            "ArrayList is not thread-safe, so concurrent adds lose elements or corrupt its internal state",
+            "Side effects in forEach break under parallelism; let the stream build the result with collect(Collectors.toList()) or toList()",
+            "Parallel streams only pay off for large, CPU-bound, easily split work without shared state"
+          ]
+        },
+        {
+          "id": "java-functional-rules", "type": "SCENARIO", "subtopic": "Functional interfaces and lambdas", "levels": [2, 3],
+          "question": "You have several discount rules that each take an order and return a discount. How would you model and combine them with functional interfaces instead of a long if-else chain?",
+          "keyPoints": [
+            "Model a rule as a functional interface, such as Function<Order, BigDecimal> or a custom @FunctionalInterface",
+            "Keep the rules in a list and apply them with a stream, combining the results (sum, max)",
+            "Each rule is a lambda, a method reference or a small class",
+            "New rules are added without changing the combining code",
+            "Lambdas can only capture effectively final local variables"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "concurrency",
+      "subtopics": ["synchronized and locks", "volatile and the memory model", "Executors and thread pools", "CompletableFuture", "Race conditions and deadlocks", "Virtual threads"],
+      "misconceptions": [
+        "volatile makes count++ atomic",
+        "A synchronized instance method locks the class for every instance",
+        "More threads always mean more throughput",
+        "A HashMap is safe to share as long as only one thread writes to it"
+      ],
+      "references": ["java/concurrency.md"],
+      "templates": [
+        {
+          "id": "java-synchronized-vs-lock", "type": "CONCEPT", "subtopic": "synchronized and locks", "levels": [2, 4],
+          "question": "What is the difference between synchronized and a ReentrantLock, and when would you choose the lock?",
+          "keyPoints": [
+            "Both give mutual exclusion and make changes visible to the next thread that takes the lock (happens-before)",
+            "synchronized is block-structured: the lock is released automatically when the block exits, also on an exception",
+            "A ReentrantLock must be unlocked explicitly, in a finally block",
+            "A Lock adds tryLock with a timeout, interruptible locking, optional fairness and several Conditions",
+            "Use synchronized by default and a Lock when those features are needed; a ReadWriteLock suits read-heavy data"
+          ]
+        },
+        {
+          "id": "java-volatile", "type": "INTERNALS", "subtopic": "volatile and the memory model", "levels": [3, 5],
+          "question": "What does volatile guarantee in Java, and why is it not enough to make a counter thread-safe?",
+          "keyPoints": [
+            "A write to a volatile field is visible to every later read of it in other threads (happens-before)",
+            "It also prevents reordering of memory operations around the volatile access",
+            "It does not make compound actions atomic: count++ is a read, an increment and a write, and two threads can interleave and lose an update",
+            "Counters need AtomicInteger, LongAdder or a lock",
+            "volatile suits flags and safely publishing references to immutable objects"
+          ]
+        },
+        {
+          "id": "java-parallel-downstream-calls", "type": "SCENARIO", "subtopic": "Executors and thread pools", "levels": [3, 5],
+          "question": "A service must call three slow downstream APIs for every request and combine the results. How would you run the calls in parallel in Java, and how would you size and protect the thread pool?",
+          "keyPoints": [
+            "Submit the calls to an ExecutorService, or use CompletableFuture.supplyAsync with an explicit executor, and combine them with allOf or thenCombine",
+            "Do not run blocking I/O on the common ForkJoinPool",
+            "Use a bounded pool and a bounded queue sized for the expected concurrency, with a rejection policy",
+            "Set timeouts (orTimeout, or get with a timeout) and handle failures (exceptionally, handle)",
+            "In Java 21, virtual threads are an option for blocking I/O"
+          ]
+        },
+        {
+          "id": "java-deadlock", "type": "DEBUGGING", "subtopic": "Race conditions and deadlocks", "levels": [3, 5],
+          "question": "Under load, two threads of a money-transfer service hang forever. Each transfer locks the source account and then the destination account. What is happening, and how would you confirm and fix it?",
+          "keyPoints": [
+            "A deadlock: one thread holds account A and waits for B while the other holds B and waits for A (circular wait)",
+            "A thread dump (jstack, jcmd Thread.print) shows the threads BLOCKED on each other's monitors and reports the deadlock",
+            "Fix it by always acquiring the locks in a global order, for example by account id",
+            "Alternatively use tryLock with a timeout and retry, and keep the locked section short"
+          ]
+        },
+        {
+          "id": "java-lost-update-counter", "type": "DEBUGGING", "subtopic": "Race conditions and deadlocks", "levels": [2, 4],
+          "question": "A page-view counter, a plain long field incremented in a Spring singleton bean, reports fewer views than the access log. Why?",
+          "keyPoints": [
+            "The singleton bean is shared by all request threads",
+            "count++ is not atomic, so concurrent increments overwrite each other (lost updates)",
+            "Without synchronization there is no guarantee that other threads see the latest value",
+            "Use AtomicLong or LongAdder, or synchronize",
+            "With several application instances an in-memory counter only counts one instance's traffic"
+          ]
+        },
+        {
+          "id": "java-completablefuture", "type": "INTERNALS", "subtopic": "CompletableFuture", "levels": [3, 5],
+          "question": "How does CompletableFuture differ from a plain Future, and what happens to an exception thrown in one stage of a chain?",
+          "keyPoints": [
+            "A Future only offers a blocking get; a CompletableFuture can be composed without blocking with thenApply, thenCompose, thenCombine and allOf",
+            "Stages run on the thread that completes the previous stage, or on an executor for the *Async methods (the common ForkJoinPool by default)",
+            "An exception completes the stage exceptionally, and dependent thenApply stages are skipped until exceptionally, handle or whenComplete deals with it",
+            "join wraps the cause in a CompletionException, get in an ExecutionException"
+          ]
+        },
+        {
+          "id": "java-virtual-threads", "type": "CONCEPT", "subtopic": "Virtual threads", "levels": [3, 5],
+          "question": "What are virtual threads in Java 21, and what kind of workload do they help?",
+          "keyPoints": [
+            "They are lightweight threads scheduled by the JVM onto a small pool of carrier (platform) threads",
+            "When a virtual thread blocks on I/O it is unmounted, so its carrier can run other virtual threads",
+            "They let simple thread-per-request blocking code handle very many concurrent I/O-bound tasks",
+            "They do not make CPU-bound work faster",
+            "They should not be pooled, and blocking while pinned (for example inside synchronized in Java 21) holds the carrier"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "jvm-memory-gc",
+      "subtopics": ["Heap and stack", "Garbage collection", "Memory leaks", "GC tuning", "Class loading"],
+      "misconceptions": [
+        "Java cannot have memory leaks because it has a garbage collector",
+        "System.gc() forces an immediate collection",
+        "A bigger heap always means shorter pauses",
+        "An object is freed as soon as it goes out of scope"
+      ],
+      "references": ["java/jvm-memory-gc.md"],
+      "templates": [
+        {
+          "id": "java-gc-basics", "type": "INTERNALS", "subtopic": "Garbage collection", "levels": [3, 5],
+          "question": "How does garbage collection work in the JVM? Explain how the collector decides what is garbage and why the heap is split into generations.",
+          "keyPoints": [
+            "An object is garbage when it is no longer reachable from the GC roots: thread stacks, static fields, JNI references",
+            "Reachability is traced, not counted, so unreachable cycles are collected too",
+            "Most objects die young, so the young generation is collected often and cheaply and survivors are promoted to the old generation",
+            "Collectors trade throughput, pause time and memory footprint: G1 is the default, ZGC aims at very short pauses",
+            "Some phases stop all application threads; others run concurrently with them"
+          ]
+        },
+        {
+          "id": "java-heap-vs-stack", "type": "CONCEPT", "subtopic": "Heap and stack", "levels": [3, 4],
+          "question": "What lives on the heap and what lives on the stack of a running Java program, and which errors do you get when each runs out?",
+          "keyPoints": [
+            "Each thread has its own stack of frames holding local variables, which are primitives and references",
+            "Objects and arrays live on the heap, shared by all threads",
+            "Too deep (or infinite) recursion exhausts a stack: StackOverflowError",
+            "An exhausted heap gives OutOfMemoryError: Java heap space",
+            "Class metadata lives in metaspace, which can run out separately (OutOfMemoryError: Metaspace)"
+          ]
+        },
+        {
+          "id": "java-memory-leak", "type": "DEBUGGING", "subtopic": "Memory leaks", "levels": [3, 5],
+          "question": "A service's heap usage grows steadily for days until it fails with OutOfMemoryError, although traffic is flat. How would you find the cause, and what are typical culprits?",
+          "keyPoints": [
+            "A leak in Java means objects stay reachable although they are no longer needed",
+            "Take a heap dump (-XX:+HeapDumpOnOutOfMemoryError, or jcmd GC.heap_dump) and analyse what retains the most memory, for example with Eclipse MAT",
+            "GC logs show whether the heap after each full collection keeps growing",
+            "Typical culprits: unbounded caches or static collections, listeners that are never removed, ThreadLocals in pooled threads",
+            "Fix by bounding or evicting, or by removing the references when they are no longer needed"
+          ]
+        },
+        {
+          "id": "java-gc-latency", "type": "SCENARIO", "subtopic": "GC tuning", "levels": [4, 5],
+          "question": "A latency-sensitive API has p99 latency spikes that line up with long garbage-collection pauses. What would you look at, and which options would you consider?",
+          "keyPoints": [
+            "Enable and read the GC logs (-Xlog:gc*) to see pause times, frequency and causes",
+            "Reduce the allocation rate and object churn in the hot paths",
+            "Size the heap so collections are not constantly under pressure, and look for full GCs caused by promotion failures",
+            "Consider a low-pause collector such as ZGC, or a G1 pause-time goal",
+            "Change one thing at a time and measure the effect on the same latency metric"
+          ]
+        },
+        {
+          "id": "java-class-loading", "type": "CONCEPT", "subtopic": "Class loading", "levels": [4, 5],
+          "question": "How does class loading work in Java, and why can the same class, loaded by two class loaders, cause a ClassCastException?",
+          "keyPoints": [
+            "Classes are loaded lazily by class loaders (bootstrap, platform, application) that delegate to their parent first",
+            "Loading is followed by linking (verification, preparation, resolution) and initialisation, which runs the static initialisers once",
+            "A class is identified by its name together with the class loader that defined it",
+            "The same class name loaded by two loaders gives two distinct types, so casting between them fails, as can happen in application servers or plugin systems"
+          ]
+        }
+      ]
+    }
+  ]
+}

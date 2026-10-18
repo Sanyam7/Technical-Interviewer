@@ -1,0 +1,67 @@
+{
+  "type": "object",
+  "description": "One interview question with the key points a good answer contains.",
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "The requested topic key, copied exactly, or none when no topic was requested."
+    },
+    "difficulty": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "The requested difficulty level, copied exactly."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The question as the candidate will read it, 40 to 2000 characters, without hints at the answer."
+    },
+    "estimatedMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 60,
+      "description": "Minutes a well-prepared candidate needs to answer."
+    },
+    "expectedKeyPoints": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 6,
+      "description": "The ideas a strong answer contains; never shown to the candidate.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "kp1, kp2, ... unique within the question."
+          },
+          "text": {
+            "type": "string",
+            "description": "One idea, at most 500 characters."
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            },
+            "description": "Tokens (r1, r2, ...) of the reference passages that support this key point; empty when none does."
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "sources"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "topic",
+    "difficulty",
+    "prompt",
+    "estimatedMinutes",
+    "expectedKeyPoints"
+  ],
+  "additionalProperties": false
+}

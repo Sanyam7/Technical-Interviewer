@@ -1,0 +1,51 @@
+{
+  "id": "maximum-subarray",
+  "title": "Maximum Subarray",
+  "difficulty": 2,
+  "statement": "Given an integer array `nums`, find the contiguous subarray (containing at least one number) with the largest sum and return that sum.",
+  "constraints": [
+    "1 <= nums.length <= 2 * 10^5",
+    "-10^4 <= nums[i] <= 10^4"
+  ],
+  "signature": {
+    "name": "maxSubArray",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n)",
+    "space": "O(1)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Uses Kadane's algorithm: the best sum ending at each index is that element or the element plus the best sum before it"
+    },
+    {
+      "id": "kp2",
+      "text": "Tracks the best sum seen overall, separately from the running sum"
+    },
+    {
+      "id": "kp3",
+      "text": "Starts from the first element (not from 0), so an all-negative array returns its largest element"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[-2, 1, -3, 4, -1, 2, 1, -5, 4]], "expected": 6, "explanation": "The subarray [4,-1,2,1] has the largest sum, 6."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[5, 4, -1, 7, 8]], "expected": 23},
+    {"name": "mixed values", "category": "GENERAL", "args": [[1, -3, 2, 1, -1]], "expected": 3},
+    {"name": "whole array", "category": "GENERAL", "args": [[1, 2, 3, 4]], "expected": 10},
+    {"name": "best in the middle", "category": "GENERAL", "args": [[-5, 6, -2, 6, -10, 3]], "expected": 10},
+    {"name": "single negative element", "category": "EDGE", "args": [[-1]], "expected": -1},
+    {"name": "all negative", "category": "EDGE", "args": [[-3, -2, -5]], "expected": -2},
+    {"name": "zeros and negatives", "category": "EDGE", "args": [[-2, 0, -1]], "expected": 0},
+    {"name": "large array", "category": "PERFORMANCE", "args": [{"$concat": [{"$repeat": [-1, 100000]}, {"$repeat": [2, 100000]}]}], "expected": 200000}
+  ]
+}

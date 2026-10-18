@@ -1,0 +1,193 @@
+{
+  "skill": "microservices",
+  "topics": [
+    {
+      "topic": "architecture",
+      "subtopics": ["Monolith versus microservices", "Service boundaries", "Database per service", "Synchronous and asynchronous communication", "API gateway", "Service discovery", "Sagas", "Two-phase commit", "Eventual consistency", "Duplicate events", "Circuit breakers and bulkheads", "Timeouts and retries", "Fallbacks and graceful degradation"],
+      "misconceptions": [
+        "Microservices are always better than a monolith",
+        "Services can share one database schema without coupling",
+        "A call to another service is as reliable as a local method call",
+        "@Transactional can span calls to several services",
+        "Retries always make a system more reliable",
+        "Default HTTP client timeouts are safe"
+      ],
+      "references": ["microservices/microservices.md", "system-design/messaging-async.md", "system-design/reliability-observability.md"],
+      "templates": [
+        {
+          "id": "ms-monolith-vs-microservices", "type": "CONCEPT", "subtopic": "Monolith versus microservices", "levels": [2, 3],
+          "question": "What are the benefits and costs of microservices compared with a well-structured monolith, and when would you not use them?",
+          "keyPoints": [
+            "Benefits: independent deployment and scaling, team autonomy, fault isolation, technology choice per service",
+            "Costs: network latency and partial failures, distributed data consistency, harder testing",
+            "Operating them needs automation: deployment, monitoring, tracing",
+            "A small team, an early product or an unclear domain is better served by a modular monolith"
+          ]
+        },
+        {
+          "id": "ms-boundaries", "type": "CONCEPT", "subtopic": "Service boundaries", "levels": [3, 4],
+          "question": "How do you decide where to draw the boundaries between microservices?",
+          "keyPoints": [
+            "Around business capabilities or bounded contexts, not technical layers",
+            "High cohesion inside a service and loose coupling between services",
+            "Each service owns its data",
+            "Boundaries should keep synchronous calls between services few",
+            "They follow team ownership; a change that regularly touches several services signals a wrong boundary"
+          ]
+        },
+        {
+          "id": "ms-shared-database", "type": "SCENARIO", "subtopic": "Database per service", "levels": [3, 4],
+          "question": "The order service and the inventory service read and write the same database tables. What problems does that cause, and how would you separate them?",
+          "keyPoints": [
+            "Shared tables couple the services: a schema change can break the other service, and deployments must be coordinated",
+            "Nobody clearly owns the data",
+            "Give each service its own database or schema",
+            "Other services use the owner's API, or keep a local copy updated by its events",
+            "Migrate step by step"
+          ]
+        },
+        {
+          "id": "ms-distributed-monolith", "type": "DEBUGGING", "subtopic": "Service boundaries", "levels": [3, 4],
+          "question": "Every release requires deploying five services together, and one slow service makes all requests slow. What has gone wrong in the architecture?",
+          "keyPoints": [
+            "It is a distributed monolith: the services are tightly coupled",
+            "Long synchronous call chains add up latency and spread failures",
+            "Shared contracts or data force coordinated releases",
+            "Redraw the boundaries, use events where callers need not wait, and keep contracts backward compatible",
+            "Add timeouts and circuit breakers to the remaining synchronous calls"
+          ]
+        },
+        {
+          "id": "ms-sync-vs-async", "type": "CONCEPT", "subtopic": "Synchronous and asynchronous communication", "levels": [2, 4],
+          "question": "When would one microservice call another synchronously, with REST or gRPC, and when would it publish an event instead?",
+          "keyPoints": [
+            "Synchronous calls fit when the caller needs the answer to continue, such as a query or a validation",
+            "They couple availability: both services must be up, and latencies add up",
+            "Events fit when others react to something that happened and the publisher need not wait",
+            "Events decouple the services and allow several consumers, at the price of eventual consistency and harder debugging",
+            "Most systems combine both"
+          ]
+        },
+        {
+          "id": "ms-api-gateway", "type": "CONCEPT", "subtopic": "API gateway", "levels": [2, 3],
+          "question": "What does an API gateway do in a microservices system?",
+          "keyPoints": [
+            "It is the single entry point for clients and routes requests to the services",
+            "It handles cross-cutting concerns: authentication and token validation, rate limiting, TLS, logging",
+            "It can aggregate several calls for a client (backend for frontend)",
+            "It should not contain business logic",
+            "It must be highly available"
+          ]
+        },
+        {
+          "id": "ms-service-discovery", "type": "INTERNALS", "subtopic": "Service discovery", "levels": [3, 4],
+          "question": "How do services find each other when instances come and go? Compare client-side and server-side discovery.",
+          "keyPoints": [
+            "Instances register in a registry (Eureka, Consul), or the platform tracks them (Kubernetes services and DNS)",
+            "Client-side discovery: the caller looks up the instances and balances the load itself",
+            "Server-side discovery: the caller uses a stable address and a load balancer or proxy routes the request",
+            "Health checks remove dead instances"
+          ]
+        },
+        {
+          "id": "ms-checkout-chain", "type": "SCENARIO", "subtopic": "Synchronous and asynchronous communication", "levels": [3, 4],
+          "question": "Placing an order calls the inventory, pricing, payment and notification services one after another, synchronously. Checkout is slow and fails whenever one of them is down. How would you redesign it?",
+          "keyPoints": [
+            "Separate what the user must wait for (stock, payment) from what can happen afterwards (notification)",
+            "Run independent calls in parallel",
+            "Publish an OrderPlaced event that the notification service consumes",
+            "Put timeouts and circuit breakers on the remaining synchronous calls",
+            "Coordinate the steps that must stay consistent with a saga"
+          ]
+        },
+        {
+          "id": "ms-saga", "type": "CONCEPT", "subtopic": "Sagas", "levels": [3, 5],
+          "question": "What is a saga, and how does it keep data consistent across services without a distributed transaction? Compare choreography and orchestration.",
+          "keyPoints": [
+            "A saga is a sequence of local transactions, one per service, each triggering the next",
+            "When a step fails, compensating transactions undo the steps already done, such as a refund or releasing stock",
+            "Choreography: services react to each other's events without a coordinator, which is harder to follow",
+            "Orchestration: a coordinator tells each service what to do and tracks the saga's state",
+            "The result is eventual consistency without isolation: intermediate states are visible"
+          ]
+        },
+        {
+          "id": "ms-two-phase-commit", "type": "INTERNALS", "subtopic": "Two-phase commit", "levels": [4, 5],
+          "question": "How does two-phase commit work, and why is it usually avoided between microservices?",
+          "keyPoints": [
+            "A coordinator asks every participant to prepare, then tells all of them to commit or to abort",
+            "Participants hold their locks until the decision arrives",
+            "If the coordinator fails after the prepare phase, participants are stuck",
+            "Every resource must support the protocol (XA)",
+            "It couples the availability of all services and scales poorly, so sagas are preferred"
+          ]
+        },
+        {
+          "id": "ms-order-saga", "type": "SCENARIO", "subtopic": "Eventual consistency", "levels": [3, 5],
+          "question": "Design the order flow across the order, payment and inventory services so that a failed payment never leaves stock reserved.",
+          "keyPoints": [
+            "The order service creates the order as PENDING",
+            "The inventory service reserves stock, then the payment service charges",
+            "When the payment fails, inventory releases the reservation (compensation) and the order becomes CANCELLED",
+            "When it succeeds, the order becomes CONFIRMED",
+            "Handlers are idempotent, events are published reliably (outbox), and a step that never answers times out"
+          ]
+        },
+        {
+          "id": "ms-duplicate-events", "type": "DEBUGGING", "subtopic": "Duplicate events", "levels": [3, 5],
+          "question": "Customers occasionally receive two confirmation emails, and stock is sometimes reduced twice for one order. The services communicate with events. What is likely happening?",
+          "keyPoints": [
+            "Delivery is at least once: retries, a consumer crash before acknowledging, or an outbox relay resending deliver an event twice",
+            "The consumers are not idempotent",
+            "Record processed event ids with a unique constraint in the same transaction as the effect",
+            "Or make the operations idempotent",
+            "Check the relay's and the consumers' commit and acknowledgement logic"
+          ]
+        },
+        {
+          "id": "ms-circuit-breaker-bulkhead", "type": "CONCEPT", "subtopic": "Circuit breakers and bulkheads", "levels": [2, 4],
+          "question": "What are the circuit breaker and bulkhead patterns, and how do they stop one failing service from bringing down others?",
+          "keyPoints": [
+            "A circuit breaker fails calls fast after repeated failures, then lets trial calls through before closing again",
+            "A bulkhead isolates resources per dependency, such as separate thread or connection pools",
+            "Together they stop a slow dependency from exhausting the caller's resources (cascading failure)",
+            "Libraries such as Resilience4j implement them"
+          ]
+        },
+        {
+          "id": "ms-retry-storm", "type": "DEBUGGING", "subtopic": "Timeouts and retries", "levels": [3, 5],
+          "question": "When the payment service slows down, the whole platform falls over: requests to payment triple and every upstream thread pool fills up. What is happening, and how do you fix it?",
+          "keyPoints": [
+            "Retries at several layers multiply the load on a service that is already slow (a retry storm)",
+            "Missing or long timeouts hold threads, so upstream pools run dry and the failure cascades",
+            "Set timeouts shorter than the caller's own deadline",
+            "Retry only transient errors, at one layer, with exponential backoff, jitter and a cap",
+            "Add circuit breakers and bulkheads, and shed load"
+          ]
+        },
+        {
+          "id": "ms-graceful-degradation", "type": "SCENARIO", "subtopic": "Fallbacks and graceful degradation", "levels": [2, 4],
+          "question": "The product page calls a recommendations service that is often slow. How would you keep the product page fast and available?",
+          "keyPoints": [
+            "A tight timeout on the recommendations call",
+            "A circuit breaker that skips the call while the service is failing",
+            "A fallback: cached or default recommendations, or the page without that section",
+            "Or load the recommendations separately after the main content",
+            "Non-critical features should degrade instead of failing the page"
+          ]
+        },
+        {
+          "id": "ms-timeout-budget", "type": "INTERNALS", "subtopic": "Timeouts and retries", "levels": [3, 5],
+          "question": "How would you choose the timeouts of a chain of service calls, and why should deadlines be propagated?",
+          "keyPoints": [
+            "Base timeouts on measured latency (above the p99) and on the caller's own time budget",
+            "An inner call's timeout must be shorter than the outer one, or work continues after the caller has given up",
+            "Propagating the remaining deadline lets downstream services stop work nobody will use",
+            "Connect and read timeouts are set separately",
+            "Retries must fit within the budget"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+{
+  "id": "meeting-rooms",
+  "title": "Meeting Rooms",
+  "difficulty": 4,
+  "statement": "Given an array of meeting time `intervals` where `intervals[i] = [start, end]`, return the minimum number of rooms needed so that no two meetings in the same room overlap.\n\nA meeting that ends at time `t` frees its room for a meeting that starts at `t`.",
+  "constraints": [
+    "1 <= intervals.length <= 10^4",
+    "0 <= start < end <= 10^6"
+  ],
+  "signature": {
+    "name": "minMeetingRooms",
+    "params": [
+      {
+        "name": "intervals",
+        "type": "int[][]"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Sorts meetings by start time"
+    },
+    {
+      "id": "kp2",
+      "text": "Uses a min-heap of end times (or two sorted arrays of starts and ends) to reuse the room that frees first"
+    },
+    {
+      "id": "kp3",
+      "text": "Treats a meeting ending at t and one starting at t as not overlapping"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[[0, 30], [5, 10], [15, 20]]], "expected": 2, "explanation": "[0,30] overlaps both others, which do not overlap each other."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[[7, 10], [2, 4]]], "expected": 1},
+    {"name": "three overlapping", "category": "GENERAL", "args": [[[1, 5], [2, 6], [3, 7]]], "expected": 3},
+    {"name": "unsorted input", "category": "GENERAL", "args": [[[9, 10], [4, 9], [4, 17]]], "expected": 2},
+    {"name": "rooms reused", "category": "GENERAL", "args": [[[1, 3], [2, 4], [3, 5], [4, 6]]], "expected": 2},
+    {"name": "single meeting", "category": "EDGE", "args": [[[1, 2]]], "expected": 1},
+    {"name": "back to back", "category": "EDGE", "args": [[[1, 5], [5, 10], [10, 15]]], "expected": 1},
+    {"name": "identical meetings", "category": "EDGE", "args": [[[2, 4], [2, 4], [2, 4]]], "expected": 3}
+  ]
+}

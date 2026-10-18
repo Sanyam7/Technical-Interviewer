@@ -1,0 +1,353 @@
+{
+  "skill": "system-design",
+  "topics": [
+    {
+      "topic": "scalability-fundamentals",
+      "subtopics": ["Vertical and horizontal scaling", "Load balancing", "Stateless services", "Capacity estimation"],
+      "misconceptions": [
+        "Any service can be scaled horizontally without changes",
+        "Adding servers always increases throughput"
+      ],
+      "references": ["system-design/scalability-fundamentals.md"],
+      "templates": [
+        {
+          "id": "sd-horizontal-scaling", "type": "CONCEPT", "subtopic": "Vertical and horizontal scaling", "levels": [1, 3],
+          "question": "What is the difference between vertical and horizontal scaling, and what does an application need in order to scale horizontally?",
+          "keyPoints": [
+            "Vertical scaling uses a bigger machine: simple, but limited and a single point of failure",
+            "Horizontal scaling adds machines behind a load balancer, adding capacity and redundancy",
+            "Application instances must be stateless: sessions in a shared store or in tokens",
+            "The data layer must cope too; the database is often the next bottleneck"
+          ]
+        },
+        {
+          "id": "sd-load-balancer", "type": "INTERNALS", "subtopic": "Load balancing", "levels": [2, 3],
+          "question": "How does a load balancer distribute traffic, and how does it know that a server is unhealthy?",
+          "keyPoints": [
+            "Algorithms such as round robin, least connections, or hashing on a key",
+            "Layer 4 balancers route TCP connections; layer 7 balancers understand HTTP and can route by path and terminate TLS",
+            "Health checks take failing instances out of rotation",
+            "Sticky sessions make scaling and failover harder"
+          ]
+        },
+        {
+          "id": "sd-session-state", "type": "SCENARIO", "subtopic": "Stateless services", "levels": [2, 3],
+          "question": "A web app keeps each user's shopping cart in the HTTP session in server memory. After a second instance is added behind a load balancer, users start losing their carts. Why, and how do you fix it?",
+          "keyPoints": [
+            "Each instance has its own memory, and requests of one user land on different instances",
+            "Sticky sessions hide the problem but lose carts when an instance fails",
+            "Move the state out of the instances: a shared session store (for example Redis with Spring Session) or the database",
+            "Stateless instances are interchangeable, so they can be added and replaced freely"
+          ]
+        },
+        {
+          "id": "sd-capacity-estimate", "type": "SCENARIO", "subtopic": "Capacity estimation", "levels": [2, 3],
+          "question": "Estimate the storage and the requests per second for a service that stores 10 million new 1 KB records per day and serves 100 reads for every write.",
+          "keyPoints": [
+            "10 million times 1 KB is about 10 GB a day, roughly 3.7 TB a year before replication and indexes",
+            "About 10 million / 86,400 = 116 writes per second on average",
+            "About 11,600 reads per second on average",
+            "Peaks are several times the average, so plan for them",
+            "The numbers drive decisions such as caching reads and partitioning storage"
+          ]
+        },
+        {
+          "id": "sd-scaling-no-gain", "type": "DEBUGGING", "subtopic": "Load balancing", "levels": [2, 3],
+          "question": "After two more application servers were added, throughput barely improved and latency went up. What would you investigate?",
+          "keyPoints": [
+            "A shared bottleneck behind the application servers: database CPU, locks or connections",
+            "Connection pools: instances times pool size may exceed the database's connection limit",
+            "A downstream dependency or cache that is saturated",
+            "Uneven load distribution, for example from sticky sessions",
+            "Measure each tier's utilisation to find the saturated resource"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "caching",
+      "subtopics": ["Cache-aside and write strategies", "Invalidation and TTL", "Cache stampede", "Cache placement"],
+      "misconceptions": [
+        "A cache can be treated as the source of truth",
+        "A longer TTL is always better",
+        "Caching a slow query has no downside"
+      ],
+      "references": ["system-design/caching.md"],
+      "templates": [
+        {
+          "id": "sd-cache-strategies", "type": "CONCEPT", "subtopic": "Cache-aside and write strategies", "levels": [2, 3],
+          "question": "Explain cache-aside, write-through and write-behind caching. Which would you use for a product catalogue?",
+          "keyPoints": [
+            "Cache-aside: read the cache, on a miss load from the database and fill the cache; writes go to the database and invalidate the key",
+            "Write-through: every write updates the cache and the database synchronously",
+            "Write-behind: the cache acknowledges and writes to the database later, with a risk of losing writes",
+            "A read-heavy catalogue suits cache-aside with a TTL and invalidation on update"
+          ]
+        },
+        {
+          "id": "sd-cache-invalidation", "type": "INTERNALS", "subtopic": "Invalidation and TTL", "levels": [2, 4],
+          "question": "Why is cache invalidation hard, and how do you keep a cache reasonably consistent with the database?",
+          "keyPoints": [
+            "Copies of the data live in caches while the database changes, often in several places",
+            "Invalidate or update the cached entry on every write, after the database commit",
+            "A TTL bounds how stale an entry can get when an invalidation is missed",
+            "A race: a reader can put a stale value back between the write and the invalidation",
+            "Decide per kind of data how much staleness is acceptable"
+          ]
+        },
+        {
+          "id": "sd-cache-stampede", "type": "DEBUGGING", "subtopic": "Cache stampede", "levels": [3, 4],
+          "question": "Every hour, when a popular cache entry expires, database CPU spikes and requests time out. What is happening, and how do you prevent it?",
+          "keyPoints": [
+            "A cache stampede: many concurrent misses all hit the database at once",
+            "Let one request recompute the value while others wait or get the old value (request coalescing, a lock)",
+            "Serve the stale value while refreshing it, or refresh before expiry",
+            "Add jitter to TTLs so that keys do not expire together"
+          ]
+        },
+        {
+          "id": "sd-cache-layers", "type": "SCENARIO", "subtopic": "Cache placement", "levels": [2, 4],
+          "question": "Where would you cache in a system with a browser client, a CDN, an API service and a database, and what would you cache at each layer?",
+          "keyPoints": [
+            "Browser: HTTP caching with Cache-Control and ETags",
+            "CDN: static assets and public responses, close to users",
+            "In-process cache: small, hot, rarely changing data, separate per instance",
+            "Distributed cache such as Redis: data shared between instances",
+            "Database: its own buffer cache, and precomputed results such as materialised views"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "partitioning-replication",
+      "subtopics": ["Replication", "Sharding", "Consistency and CAP"],
+      "misconceptions": [
+        "Read replicas always return the latest data",
+        "CAP means always choosing two of three properties",
+        "Sharding is the first fix for a slow database"
+      ],
+      "references": ["system-design/partitioning-replication.md"],
+      "templates": [
+        {
+          "id": "sd-replication", "type": "CONCEPT", "subtopic": "Replication", "levels": [3, 4],
+          "question": "What are leader-follower replication and read replicas used for, and what is replication lag?",
+          "keyPoints": [
+            "Writes go to the leader, which streams its changes to the followers",
+            "Read replicas scale reads and are candidates for failover",
+            "With asynchronous replication followers lag behind, so their reads can be stale",
+            "Read-your-writes: send a user's reads to the leader for a while after they write",
+            "Synchronous replication avoids data loss at the cost of write latency"
+          ]
+        },
+        {
+          "id": "sd-sharding", "type": "INTERNALS", "subtopic": "Sharding", "levels": [3, 5],
+          "question": "How would you shard a table of user data across several databases, and what becomes harder after sharding?",
+          "keyPoints": [
+            "Choose a shard key that spreads the data evenly and that most queries include, such as the user id",
+            "Hash partitioning spreads load; range partitioning keeps ranges together but risks hot spots",
+            "Consistent hashing or a lookup directory eases rebalancing",
+            "Queries, joins and transactions across shards become hard",
+            "Resharding is costly, so it is not the first fix for a slow database"
+          ]
+        },
+        {
+          "id": "sd-cap", "type": "CONCEPT", "subtopic": "Consistency and CAP", "levels": [4, 5],
+          "question": "What does the CAP theorem actually say, and how does it show up when you choose a database?",
+          "keyPoints": [
+            "During a network partition a distributed system must choose between consistency and availability",
+            "Without a partition both are possible; the everyday trade-off is between latency and consistency (PACELC)",
+            "A consistent system refuses or delays requests during a partition",
+            "An available system answers with possibly stale data and reconciles later",
+            "The right choice depends on the data: payments versus a social feed"
+          ]
+        },
+        {
+          "id": "sd-replica-lag", "type": "DEBUGGING", "subtopic": "Replication", "levels": [3, 4],
+          "question": "Users update their profile and see the old values when the page reloads, but a few seconds later the new values appear. What is the likely cause?",
+          "keyPoints": [
+            "Reads are served by an asynchronous read replica that lags behind the leader",
+            "The user does not read their own write",
+            "Route a user's reads to the leader for a short time after a write, or wait until the replica has caught up",
+            "Monitor replication lag"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "messaging-async",
+      "subtopics": ["Queues and logs", "Delivery guarantees and idempotency", "Ordering", "Outbox pattern", "Back-pressure"],
+      "misconceptions": [
+        "Brokers deliver every message exactly once by default",
+        "Kafka keeps messages ordered across the whole topic",
+        "Publishing an event after the database commit in the same method is atomic"
+      ],
+      "references": ["system-design/messaging-async.md"],
+      "templates": [
+        {
+          "id": "sd-queue-vs-log", "type": "CONCEPT", "subtopic": "Queues and logs", "levels": [2, 4],
+          "question": "What is the difference between a message queue such as RabbitMQ and a log such as Kafka, and when would you use each?",
+          "keyPoints": [
+            "A queue delivers each message to one consumer and removes it once it is acknowledged; it suits distributing tasks",
+            "A log appends messages durably, and each consumer group keeps its own position (offset)",
+            "A log can be replayed and read by many independent consumer groups",
+            "Kafka keeps order within a partition and scales by adding partitions",
+            "Logs suit event streams and replay; queues suit work queues and flexible routing"
+          ]
+        },
+        {
+          "id": "sd-idempotent-consumers", "type": "INTERNALS", "subtopic": "Delivery guarantees and idempotency", "levels": [3, 5],
+          "question": "Most brokers deliver at least once. What does that mean for consumers, and how do you make processing idempotent?",
+          "keyPoints": [
+            "A message can be delivered more than once, for example after a timeout or a crash before the acknowledgement",
+            "Consumers must handle duplicates",
+            "Record the processed message ids (with a unique constraint) in the same transaction as the effect",
+            "Or make the operation naturally idempotent: an upsert, or setting a state rather than adding to it",
+            "Exactly-once processing needs the effect and the deduplication to be atomic"
+          ]
+        },
+        {
+          "id": "sd-outbox", "type": "SCENARIO", "subtopic": "Outbox pattern", "levels": [3, 5],
+          "question": "When an order is saved, an OrderCreated event must be published to Kafka. Sometimes the order is saved but the event is never published. How would you fix that?",
+          "keyPoints": [
+            "The database commit and the publish are two separate writes that cannot be made atomic (the dual-write problem)",
+            "Write the event to an outbox table in the same database transaction as the order",
+            "A relay (a poller, or change data capture such as Debezium) publishes the outbox rows and marks them sent",
+            "Delivery becomes at least once, so consumers must deduplicate"
+          ]
+        },
+        {
+          "id": "sd-consumer-lag", "type": "DEBUGGING", "subtopic": "Back-pressure", "levels": [3, 5],
+          "question": "A consumer group's lag keeps growing during peak hours, and a few messages fail repeatedly and block their partition. What would you do?",
+          "keyPoints": [
+            "Measure the processing time and throughput per consumer",
+            "Add consumers up to the number of partitions, and more partitions if needed",
+            "Speed up processing: batching, fewer or faster downstream calls",
+            "Retry a failing message a few times with backoff, then move it to a dead-letter topic so the partition keeps moving",
+            "Alert on lag"
+          ]
+        },
+        {
+          "id": "sd-event-ordering", "type": "CONCEPT", "subtopic": "Ordering", "levels": [3, 4],
+          "question": "How do you keep the events of the same order in sequence when Kafka has several partitions and consumers?",
+          "keyPoints": [
+            "Kafka guarantees order only within a partition",
+            "Use the order id as the message key so that all its events go to the same partition",
+            "One consumer of a group reads a partition, in order",
+            "Retries or parallel processing inside a consumer can still reorder events",
+            "Version numbers let a consumer ignore events older than what it has applied"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "api-design-rate-limiting",
+      "subtopics": ["Rate limiting", "Pagination", "Idempotency keys", "Versioning"],
+      "misconceptions": [
+        "Offset pagination works well at any size",
+        "A POST request can be retried safely without extra measures"
+      ],
+      "references": ["system-design/api-design-rate-limiting.md", "rest/rest-api-design.md"],
+      "templates": [
+        {
+          "id": "sd-rate-limiting", "type": "INTERNALS", "subtopic": "Rate limiting", "levels": [2, 4],
+          "question": "How would you implement rate limiting for a public API? Compare the token bucket and the fixed window approaches.",
+          "keyPoints": [
+            "A fixed window counts requests per interval; it is simple but allows bursts at the window boundaries",
+            "Sliding windows smooth those boundaries",
+            "A token bucket refills tokens at a steady rate up to a capacity and allows bounded bursts",
+            "With several instances the counters need a shared store (for example Redis with atomic operations), or limits per instance",
+            "A rejected request gets 429 Too Many Requests with Retry-After"
+          ]
+        },
+        {
+          "id": "sd-pagination", "type": "CONCEPT", "subtopic": "Pagination", "levels": [2, 3],
+          "question": "Compare offset and cursor (keyset) pagination. Which would you use for an infinite-scroll feed?",
+          "keyPoints": [
+            "Offset and limit are simple and allow jumping to a page",
+            "With offset the database still reads and discards the skipped rows, so deep pages are slow, and pages shift when rows are inserted",
+            "Cursor pagination continues after the last seen sort key (WHERE id < ? ORDER BY id DESC LIMIT n) using an index",
+            "It stays fast and stable under inserts but cannot jump to page N",
+            "An infinite-scroll feed suits a cursor"
+          ]
+        },
+        {
+          "id": "sd-idempotency-key", "type": "SCENARIO", "subtopic": "Idempotency keys", "levels": [3, 4],
+          "question": "A mobile client retries a payment request after a timeout, and the customer is charged twice. How would you design the API to prevent that?",
+          "keyPoints": [
+            "The client sends an Idempotency-Key header that is unique per payment and reuses it when retrying",
+            "The server stores the key with the result and returns the stored result for a repeat",
+            "A unique constraint or lock handles two concurrent requests with the same key",
+            "Keys expire after a retention period"
+          ]
+        },
+        {
+          "id": "sd-breaking-change", "type": "DEBUGGING", "subtopic": "Versioning", "levels": [2, 4],
+          "question": "After a release that renamed a JSON field, older versions of the mobile app start failing. How should the API change have been made?",
+          "keyPoints": [
+            "Renaming or removing a field is a breaking change",
+            "Change additively: add the new field, keep the old one and deprecate it",
+            "Clients should ignore fields they do not know",
+            "Breaking changes need a new API version, with both versions running during the migration",
+            "Contract tests catch breaking changes before release"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "reliability-observability",
+      "subtopics": ["Timeouts and retries", "Circuit breakers", "SLOs and error budgets", "Metrics, logs and traces"],
+      "misconceptions": [
+        "Retrying immediately and without limit improves reliability",
+        "100% availability should be the target",
+        "Logs alone are enough to debug a distributed system"
+      ],
+      "references": ["system-design/reliability-observability.md"],
+      "templates": [
+        {
+          "id": "sd-timeouts-retries", "type": "CONCEPT", "subtopic": "Timeouts and retries", "levels": [3, 4],
+          "question": "Why does every remote call need a timeout, and how should retries be done so that they do not make an outage worse?",
+          "keyPoints": [
+            "Without a timeout a slow dependency holds threads and connections until the caller fails as well (cascading failure)",
+            "Retry only transient failures, and only idempotent operations",
+            "Use exponential backoff with jitter and a limit on attempts",
+            "Retry at one layer only, within a budget",
+            "Propagate deadlines so inner calls do not outlive their caller"
+          ]
+        },
+        {
+          "id": "sd-circuit-breaker", "type": "INTERNALS", "subtopic": "Circuit breakers", "levels": [3, 5],
+          "question": "How does a circuit breaker work, and what problem does it solve?",
+          "keyPoints": [
+            "It counts failures of calls to a dependency",
+            "Past a threshold it opens, and calls fail fast instead of waiting",
+            "After a cool-down it lets a few trial calls through (half-open) and closes again if they succeed",
+            "It protects the caller's resources and gives the dependency time to recover",
+            "It is usually combined with a fallback"
+          ]
+        },
+        {
+          "id": "sd-slo", "type": "SCENARIO", "subtopic": "SLOs and error budgets", "levels": [3, 5],
+          "question": "How would you define SLOs for a checkout API, and how would you use its error budget?",
+          "keyPoints": [
+            "Indicators of what users experience: the share of successful requests and latency percentiles such as p99",
+            "An SLO is a target over a window, for example 99.9% successful requests over 30 days",
+            "The error budget is the rest: at 99.9% about 43 minutes of failure a month",
+            "Spend the budget on releases and experiments; when it runs out, prioritise reliability work",
+            "Alert on how fast the budget burns"
+          ]
+        },
+        {
+          "id": "sd-distributed-tracing", "type": "DEBUGGING", "subtopic": "Metrics, logs and traces", "levels": [3, 5],
+          "question": "A request that passes through five services is sometimes slow, but each service's own metrics look normal. How would you find where the time goes?",
+          "keyPoints": [
+            "Distributed tracing (for example OpenTelemetry) with a trace id passed along every call",
+            "The spans show the time spent in each service and call, including waiting and retries",
+            "Logs carrying the trace id can be correlated across services",
+            "Look at tail latency (p99), not averages",
+            "Typical causes: retries, waiting for the slowest of several parallel calls, waiting for a pool"
+          ]
+        }
+      ]
+    }
+  ]
+}

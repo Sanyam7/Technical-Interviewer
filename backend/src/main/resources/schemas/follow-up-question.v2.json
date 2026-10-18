@@ -1,0 +1,61 @@
+{
+  "type": "object",
+  "description": "One follow-up question aimed at the target the interviewer chose.",
+  "properties": {
+    "mode": {
+      "type": "string",
+      "enum": [
+        "PROBE_GAP",
+        "PROBE_CLAIM",
+        "DEEPEN"
+      ],
+      "description": "The requested follow-up mode, copied exactly."
+    },
+    "prompt": {
+      "type": "string",
+      "description": "The follow-up as the candidate will read it, 15 to 1000 characters."
+    },
+    "estimatedMinutes": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 15
+    },
+    "expectedKeyPoints": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "sources": {
+            "type": "array",
+            "maxItems": 3,
+            "items": {
+              "type": "string"
+            },
+            "description": "Tokens (r1, r2, ...) of the reference passages that support this key point; empty when none does."
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "sources"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "mode",
+    "prompt",
+    "estimatedMinutes",
+    "expectedKeyPoints"
+  ],
+  "additionalProperties": false
+}

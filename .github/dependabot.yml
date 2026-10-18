@@ -1,0 +1,23 @@
+# Keeps dependencies current, which is how known vulnerabilities in them get fixed (SECURITY.md, SUPPLY-1).
+# GitHub's Dependabot security alerts (repository settings) report advisories for the same manifests; these updates open the pull requests.
+version: 2
+updates:
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+    groups:
+      spring-boot:
+        patterns: ["org.springframework*"]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly

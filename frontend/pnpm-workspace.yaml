@@ -1,0 +1,2 @@
+# Fail the install on a Node.js version the dependencies do not support (pnpm 12 reads this setting here, not from .npmrc).
+engineStrict: true

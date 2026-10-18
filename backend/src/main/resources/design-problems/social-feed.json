@@ -1,0 +1,57 @@
+{
+  "id": "social-feed",
+  "title": "Design a social media news feed",
+  "levels": [
+    3,
+    5
+  ],
+  "statement": "Design the home feed of a social network like Instagram or X. Users follow other accounts and see a feed of recent posts from the accounts they follow, newest or most relevant first. Users can post text and photos, like posts and comment on them.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "300 million daily active users, each opening the feed about 10 times a day.",
+    "50 million new posts per day. Most users follow a few hundred accounts; some accounts have 100 million followers.",
+    "The feed should load in under 300 ms."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "compares fan-out on write (a precomputed feed per user) with fan-out on read (merging at request time)"
+    },
+    {
+      "id": "kp2",
+      "text": "uses a hybrid: fan-out on write for ordinary accounts, and merges posts of accounts with huge followings at read time"
+    },
+    {
+      "id": "kp3",
+      "text": "keeps precomputed feeds as bounded lists of post ids in an in-memory store"
+    },
+    {
+      "id": "kp4",
+      "text": "estimates the read load: about 3 billion feed loads per day, around 35,000 per second on average"
+    },
+    {
+      "id": "kp5",
+      "text": "stores posts and the follow graph in partitioned stores, and photos in object storage served through a CDN"
+    },
+    {
+      "id": "kp6",
+      "text": "fans out asynchronously through a queue and workers after a post is stored"
+    },
+    {
+      "id": "kp7",
+      "text": "paginates the feed with a cursor instead of offsets"
+    },
+    {
+      "id": "kp8",
+      "text": "fills in post content and counts from caches, with like counts kept approximately and updated asynchronously"
+    }
+  ],
+  "probes": {
+    "SCALABILITY": "An account with 100 million followers posts. What does your system do, and what does that cost?",
+    "CACHING": "Where would you introduce caching, and what happens to the feeds of users who have not logged in for months?",
+    "TRADE_OFFS": "Why did you choose that fan-out approach? What would make you change it?",
+    "DATA_MODEL": "How do you store the follow graph and the posts? SQL or NoSQL, and how are they partitioned?",
+    "AVAILABILITY": "The cache cluster holding precomputed feeds loses a third of its nodes. What do users see?",
+    "API_DESIGN": "What does the feed API look like, and how does pagination work while new posts keep arriving?",
+    "MESSAGING": "How does a new post reach the feeds of its author's followers?"
+  }
+}

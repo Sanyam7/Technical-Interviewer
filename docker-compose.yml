@@ -1,0 +1,38 @@
+# Local development services. Requires Docker Desktop (Compose v2).
+#   docker compose up -d      start PostgreSQL + pgvector
+#   docker compose ps         wait until the db service is "healthy"
+#   docker compose down       stop (data kept)    |   docker compose down -v   stop and wipe data
+#
+# Configuration comes from .env (copy .env.example first). Redis is intentionally absent:
+# nothing in v1 needs it (see ARCHITECTURE.md section 8.1).
+name: tech-interviewer
+
+services:
+  db:
+    # Multi-arch image (arm64 + amd64), so Apple Silicon and Intel Macs both run a native build.
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-interviewer}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Copy .env.example to .env and set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-interviewer}
+      # Optional: a role that can only read and write rows, for the application (SECURITY.md, DB-1). POSTGRES_USER then
+      # only owns the schema and runs the migrations. The role is created when the data directory is first initialised.
+      POSTGRES_APP_USER: ${POSTGRES_APP_USER:-}
+      POSTGRES_APP_PASSWORD: ${POSTGRES_APP_PASSWORD:-}
+    ports:
+      # Bound to loopback only: the database is not reachable from other machines on the network.
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+      - ./backend/src/main/resources/db/ops:/ops:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  pgdata:

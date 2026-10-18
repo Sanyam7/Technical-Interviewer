@@ -1,0 +1,445 @@
+{
+  "skill": "spring-boot",
+  "topics": [
+    {
+      "topic": "dependency-injection-proxies",
+      "subtopics": ["Inversion of control and dependency injection", "Application startup and auto-configuration", "Stereotype annotations", "Bean scopes and lifecycle", "AOP proxies"],
+      "misconceptions": [
+        "@Repository is only a naming convention with no behaviour of its own",
+        "Field injection is the recommended way to inject dependencies",
+        "Calling an annotated method from the same class still goes through the Spring proxy",
+        "A singleton bean is one instance per JVM"
+      ],
+      "references": ["spring-boot/dependency-injection-proxies.md", "spring-boot/configuration-profiles.md"],
+      "templates": [
+        {
+          "id": "spring-di-ioc", "type": "CONCEPT", "subtopic": "Inversion of control and dependency injection", "levels": [1, 3],
+          "question": "Explain dependency injection and inversion of control. Why does Spring recommend constructor injection over field injection?",
+          "keyPoints": [
+            "With inversion of control the container creates the objects and wires their dependencies, instead of each object creating its own",
+            "Dependency injection supplies dependencies from outside, which decouples a class from concrete implementations and lets tests pass mocks",
+            "Constructor injection makes dependencies explicit and mandatory and allows final fields",
+            "A class with constructor injection can be created in a plain unit test without the container; field injection hides dependencies and needs reflection",
+            "With constructor injection a circular dependency fails at startup instead of being hidden"
+          ]
+        },
+        {
+          "id": "spring-boot-startup", "type": "INTERNALS", "subtopic": "Application startup and auto-configuration", "levels": [2, 4],
+          "question": "What happens when a Spring Boot application starts, from SpringApplication.run until it is ready to serve requests?",
+          "keyPoints": [
+            "SpringApplication prepares the Environment (property sources, active profiles) and creates the ApplicationContext",
+            "Component scanning from the package of the @SpringBootApplication class registers bean definitions",
+            "Auto-configuration classes are applied conditionally (@ConditionalOnClass, @ConditionalOnMissingBean, @ConditionalOnProperty), so your own beans take precedence",
+            "Singleton beans are created, injected and initialised; bean post-processors create proxies and @PostConstruct methods run",
+            "The embedded web server starts, ApplicationRunner and CommandLineRunner beans run, and ApplicationReadyEvent is published"
+          ]
+        },
+        {
+          "id": "spring-stereotypes", "type": "CONCEPT", "subtopic": "Stereotype annotations", "levels": [1, 3],
+          "question": "What is the difference between @Component, @Service, @Repository and @Controller?",
+          "keyPoints": [
+            "All four are @Component specialisations that component scanning registers as beans",
+            "@Service adds no behaviour; it documents the business-layer role",
+            "@Repository enables translation of persistence exceptions into Spring's DataAccessException hierarchy",
+            "@Controller marks a Spring MVC controller; @RestController adds @ResponseBody to every handler method",
+            "The specific annotations also let aspects and pointcuts target a layer"
+          ]
+        },
+        {
+          "id": "spring-bean-scopes", "type": "CONCEPT", "subtopic": "Bean scopes and lifecycle", "levels": [2, 4],
+          "question": "Which bean scopes does Spring offer, and what goes wrong when a singleton bean depends on a prototype or a request-scoped bean?",
+          "keyPoints": [
+            "singleton (the default, one instance per container), prototype (a new instance per lookup), and the web scopes request, session and application",
+            "A bean is instantiated, injected and initialised (@PostConstruct), and destroyed with the container (@PreDestroy); Spring does not destroy prototypes",
+            "A prototype injected into a singleton is created once, so the singleton always uses the same instance",
+            "Fix it with ObjectProvider (or @Lookup) to get a new instance per use, or with a scoped proxy for request or session beans",
+            "Singletons are shared by all threads, so they must be stateless or thread-safe"
+          ]
+        },
+        {
+          "id": "spring-self-invocation", "type": "DEBUGGING", "subtopic": "AOP proxies", "levels": [2, 4],
+          "question": "A method annotated with @Transactional (or @Async, or @Cacheable) works when another bean calls it, but has no effect when another method of the same class calls it. Why?",
+          "keyPoints": [
+            "Spring implements these annotations with a proxy that wraps the bean",
+            "Only calls that go through the proxy are intercepted",
+            "A call from inside the class (this.method()) bypasses the proxy, so no transaction, async execution or caching happens",
+            "Move the method to another bean, call it through the proxy (an injected self-reference), or use AspectJ weaving",
+            "By default proxy-based annotations are also ignored on private methods"
+          ]
+        },
+        {
+          "id": "spring-circular-dependency", "type": "SCENARIO", "subtopic": "Inversion of control and dependency injection", "levels": [2, 4],
+          "question": "After a refactoring, the application fails at startup because OrderService needs PaymentService and PaymentService needs OrderService. How would you resolve it?",
+          "keyPoints": [
+            "Spring Boot refuses circular references by default, and constructor injection cannot resolve them",
+            "The cycle signals tangled responsibilities rather than a wiring problem",
+            "Extract the logic both need into a third bean, or invert one dependency with an interface or an application event",
+            "@Lazy on one injection point makes it start but hides the design problem; switching to field injection is not a fix"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "configuration-profiles",
+      "subtopics": ["Externalised configuration", "Profiles", "Type-safe configuration properties", "Environment-specific setup"],
+      "misconceptions": [
+        "Values in application.properties cannot be overridden at deployment time",
+        "Profiles are a good place to keep production secrets in the repository",
+        "@Value is the best way to bind a group of related settings"
+      ],
+      "references": ["spring-boot/configuration-profiles.md"],
+      "templates": [
+        {
+          "id": "spring-config-precedence", "type": "CONCEPT", "subtopic": "Externalised configuration", "levels": [1, 3],
+          "question": "How does Spring Boot find its configuration, and how would you override a property for one environment without changing the build?",
+          "keyPoints": [
+            "Properties come from many sources with a defined precedence: command-line arguments and environment variables override application.properties or .yml in the jar",
+            "A profile-specific file (application-prod.yml) overrides the default file when that profile is active",
+            "Relaxed binding maps an environment variable such as SERVER_PORT to server.port",
+            "Configuration files outside the jar (a config directory, spring.config.location or spring.config.import) override the packaged ones"
+          ]
+        },
+        {
+          "id": "spring-profiles", "type": "CONCEPT", "subtopic": "Profiles", "levels": [1, 3],
+          "question": "What are Spring profiles, and how would you use them to run with a local setup on your machine and a real database in production?",
+          "keyPoints": [
+            "A profile is a named set of configuration and beans, activated with spring.profiles.active",
+            "application-{profile}.yml holds the properties of that profile",
+            "@Profile on a bean or configuration class registers it only when the profile is active",
+            "The profile is chosen per environment (an environment variable or argument), not hard-coded in the build",
+            "Secrets come from the environment or a secret store, not from profile files in the repository"
+          ]
+        },
+        {
+          "id": "spring-configuration-properties", "type": "SCENARIO", "subtopic": "Type-safe configuration properties", "levels": [2, 3],
+          "question": "Your service has a dozen settings for calling a payment provider: base URL, timeouts, retries and an API key. How would you bind and validate them?",
+          "keyPoints": [
+            "Bind them to a @ConfigurationProperties class or record with a prefix, which handles nested objects and types such as Duration",
+            "Add @Validated with Bean Validation constraints so that wrong values fail at startup",
+            "Register it with @EnableConfigurationProperties or @ConfigurationPropertiesScan and inject it where needed",
+            "This is clearer and safer than many separate @Value fields",
+            "The API key comes from an environment variable or a secret store"
+          ]
+        },
+        {
+          "id": "spring-wrong-environment", "type": "DEBUGGING", "subtopic": "Environment-specific setup", "levels": [1, 3],
+          "question": "In production the application still connects to the local database, although application-prod.yml has the production URL. What would you check?",
+          "keyPoints": [
+            "Whether the prod profile is really active: the startup log lists the active profiles",
+            "Whether a source with higher precedence, such as the SPRING_DATASOURCE_URL environment variable or a command-line argument, overrides it",
+            "The file's name, location and YAML structure",
+            "The actuator env and configprops endpoints show which property source a value comes from"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "web-mvc-rest",
+      "subtopics": ["Request handling", "Validation", "Global exception handling", "API design with DTOs", "Performance troubleshooting"],
+      "misconceptions": [
+        "Returning JPA entities directly from controllers is fine",
+        "Every error should be returned as 500",
+        "@RestControllerAdvice handles exceptions of one controller only"
+      ],
+      "references": ["spring-boot/web-mvc-rest.md", "rest/rest-api-design.md"],
+      "templates": [
+        {
+          "id": "spring-mvc-request-flow", "type": "INTERNALS", "subtopic": "Request handling", "levels": [2, 4],
+          "question": "Walk through what happens inside Spring MVC when an HTTP request reaches a @RestController method, until the response is written.",
+          "keyPoints": [
+            "Servlet filters, including the Spring Security filter chain, run first; then the DispatcherServlet receives the request",
+            "A HandlerMapping finds the controller method and a HandlerAdapter invokes it",
+            "Argument resolvers bind path variables, query parameters and the body (with an HttpMessageConverter such as Jackson for JSON) and run validation",
+            "The return value is serialised by a message converter chosen by content negotiation",
+            "Exceptions are turned into responses by exception resolvers such as @ControllerAdvice handlers"
+          ]
+        },
+        {
+          "id": "spring-global-exception-handling", "type": "CONCEPT", "subtopic": "Global exception handling", "levels": [1, 3],
+          "question": "How do you implement global exception handling for a Spring Boot REST API, and what should an error response contain?",
+          "keyPoints": [
+            "A @RestControllerAdvice with @ExceptionHandler methods maps exceptions to responses in one place",
+            "Each exception type maps to the right status: 400 for invalid input, 404 for a missing resource, 409 for a conflict, 500 for unexpected errors",
+            "Responses have one consistent body, such as RFC 9457 problem details (ProblemDetail): type, title, status, detail",
+            "Stack traces and internal messages are not exposed to clients",
+            "Unexpected errors are logged with a correlation id that the response can carry"
+          ]
+        },
+        {
+          "id": "spring-request-validation", "type": "CONCEPT", "subtopic": "Validation", "levels": [1, 3],
+          "question": "How do you validate a request body in Spring Boot, and what happens when validation fails?",
+          "keyPoints": [
+            "Bean Validation constraints (@NotNull, @Size, @Email) on the request DTO and @Valid on the controller parameter",
+            "A failure throws MethodArgumentNotValidException, which Spring answers with 400 Bad Request",
+            "A @ControllerAdvice handler can return the field errors in a consistent format",
+            "Nested objects are validated only when the field is annotated with @Valid",
+            "Rules across fields or depending on stored data need a custom validator or a check in the service"
+          ]
+        },
+        {
+          "id": "spring-slow-endpoint", "type": "DEBUGGING", "subtopic": "Performance troubleshooting", "levels": [2, 4],
+          "question": "A REST endpoint that lists orders has become slow in production. How would you troubleshoot it?",
+          "keyPoints": [
+            "Measure first: find where the time goes with metrics, traces or timed logs (Actuator and Micrometer, an APM tool)",
+            "Check the database work: SQL logging for N+1 queries, slow queries and their plans, missing indexes",
+            "Check the payload size and whether the endpoint paginates",
+            "Check downstream calls and pool saturation: database connection pool, HTTP client pool, server threads",
+            "Fix the bottleneck (fetch joins, indexes, pagination, caching) and confirm it with the same measurement"
+          ]
+        },
+        {
+          "id": "spring-create-endpoint-design", "type": "SCENARIO", "subtopic": "API design with DTOs", "levels": [2, 3],
+          "question": "Design the endpoint that creates an order: URL, method, request and response bodies and status codes, including what happens when the product is out of stock.",
+          "keyPoints": [
+            "POST /orders with a request DTO, not the JPA entity, validated with Bean Validation",
+            "201 Created with a Location header and the created order as a response DTO",
+            "400 Bad Request with field errors for invalid input",
+            "409 Conflict (or 422) with a problem-details body when a business rule such as stock availability fails",
+            "Separate DTOs avoid exposing internal fields and lazy-loading problems"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "data-jpa",
+      "subtopics": ["N+1 problem and fetching", "Persistence context", "Lazy loading", "Repositories and queries"],
+      "misconceptions": [
+        "FetchType.LAZY guarantees that no extra queries are run",
+        "save() must be called for changes to a managed entity to be written",
+        "Derived query methods always produce efficient SQL",
+        "Open Session in View has no cost"
+      ],
+      "references": ["spring-boot/data-jpa.md"],
+      "templates": [
+        {
+          "id": "jpa-n-plus-one", "type": "INTERNALS", "subtopic": "N+1 problem and fetching", "levels": [2, 4],
+          "question": "What is the N+1 query problem in JPA, how do you spot it, and how do you fix it?",
+          "keyPoints": [
+            "One query loads N parent entities, then accessing a lazy association runs one more query per parent",
+            "SQL logging or Hibernate statistics show the same query repeated with different ids",
+            "Fix it per use case with JOIN FETCH, an @EntityGraph or a DTO projection query",
+            "Batch fetching (@BatchSize or hibernate.default_batch_fetch_size) reduces it to a few queries",
+            "Switching the association to EAGER is not a fix: it loads the data everywhere and can still cause N+1"
+          ]
+        },
+        {
+          "id": "jpa-persistence-context", "type": "INTERNALS", "subtopic": "Persistence context", "levels": [3, 5],
+          "question": "What is the persistence context in JPA, and why is a change to a managed entity saved without calling save()?",
+          "keyPoints": [
+            "The persistence context (EntityManager or Session) tracks the entities loaded or persisted in a transaction, one instance per id",
+            "At flush, before commit or before a query, dirty checking writes the changes of managed entities as UPDATE statements",
+            "save or merge is needed only for new or detached entities",
+            "When the transaction ends the entities become detached and further changes are not tracked"
+          ]
+        },
+        {
+          "id": "jpa-lazy-initialization", "type": "DEBUGGING", "subtopic": "Lazy loading", "levels": [2, 4],
+          "question": "A controller that returns an entity throws LazyInitializationException: could not initialize proxy - no Session. What is happening, and how do you fix it properly?",
+          "keyPoints": [
+            "A lazy association is touched, often during JSON serialisation, after the transaction and its persistence context have closed",
+            "The proxy cannot load its data without a session",
+            "Load what the use case needs in the service (JOIN FETCH, @EntityGraph) and map it to a DTO inside the transaction",
+            "Do not return entities from controllers",
+            "Turning on open-in-view or EAGER fetching hides the problem and costs performance"
+          ]
+        },
+        {
+          "id": "jpa-search-pagination", "type": "SCENARIO", "subtopic": "Repositories and queries", "levels": [2, 4],
+          "question": "You need a paginated search over orders with optional filters on status, customer and date range. How would you implement it with Spring Data JPA?",
+          "keyPoints": [
+            "Accept a Pageable and return a Page, or a Slice to avoid the extra count query",
+            "Build the optional filters with Specifications (Criteria API) or Querydsl instead of one derived method per combination",
+            "Index the filtered and sorted columns",
+            "Return DTO projections rather than whole entities",
+            "Sort by a stable, unique key so that pages do not overlap"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "transactions",
+      "subtopics": ["@Transactional basics", "Rollback rules", "Propagation", "Proxy pitfalls", "Concurrent updates"],
+      "misconceptions": [
+        "@Transactional rolls back on every exception",
+        "@Transactional works on private methods",
+        "A transaction covers calls to other services",
+        "@Transactional alone prevents concurrent updates from overwriting each other"
+      ],
+      "references": ["spring-boot/transactions.md", "databases/transactions-isolation.md"],
+      "templates": [
+        {
+          "id": "spring-transactional-internals", "type": "INTERNALS", "subtopic": "@Transactional basics", "levels": [2, 4],
+          "question": "How does @Transactional work in Spring, and what are its limitations?",
+          "keyPoints": [
+            "Spring wraps the bean in a proxy whose interceptor starts or joins a transaction before the method and commits or rolls back after it",
+            "The transaction is managed by a PlatformTransactionManager and bound to the current thread",
+            "Only calls through the proxy are intercepted: self-invocation is not, and by default only public methods are",
+            "It covers one transactional resource, typically one database; calls to other services are not part of it",
+            "Work started on other threads does not take part in the transaction"
+          ]
+        },
+        {
+          "id": "spring-rollback-rules", "type": "CONCEPT", "subtopic": "Rollback rules", "levels": [2, 4],
+          "question": "Which exceptions make a @Transactional method roll back by default, and how do you change that?",
+          "keyPoints": [
+            "By default unchecked exceptions (RuntimeException) and Errors roll back",
+            "Checked exceptions commit by default",
+            "rollbackFor and noRollbackFor change the rules",
+            "An exception caught inside the method does not cause a rollback",
+            "When an inner transactional method marks the shared transaction rollback-only and the exception is swallowed, the commit fails with UnexpectedRollbackException"
+          ]
+        },
+        {
+          "id": "spring-propagation", "type": "CONCEPT", "subtopic": "Propagation", "levels": [3, 5],
+          "question": "What do the propagation settings REQUIRED and REQUIRES_NEW do, and when would you use REQUIRES_NEW?",
+          "keyPoints": [
+            "REQUIRED (the default) joins the current transaction or starts one",
+            "REQUIRES_NEW suspends the current transaction and runs in a new one that commits or rolls back on its own",
+            "REQUIRES_NEW suits records that must survive the outer rollback, such as an audit log",
+            "It needs a second database connection while the outer one is held, which can exhaust the pool",
+            "NESTED uses a savepoint inside the same transaction instead"
+          ]
+        },
+        {
+          "id": "spring-no-rollback", "type": "DEBUGGING", "subtopic": "Proxy pitfalls", "levels": [2, 4],
+          "question": "A @Transactional service method throws an exception halfway through, but the rows it inserted before the exception are still in the database. What could cause that?",
+          "keyPoints": [
+            "The exception is a checked exception, which does not roll back by default",
+            "The method was called from the same class, so the proxy and the transaction were bypassed",
+            "The exception was caught and not rethrown",
+            "The method is not public, or the object is not a Spring bean",
+            "The inserts ran in a separate transaction, for example a REQUIRES_NEW method"
+          ]
+        },
+        {
+          "id": "spring-double-booking", "type": "SCENARIO", "subtopic": "Concurrent updates", "levels": [3, 5],
+          "question": "Two users book the last seat of a flight at the same time and both succeed. The booking method is @Transactional. Why is the transaction not enough, and how would you fix it?",
+          "keyPoints": [
+            "Under the default READ COMMITTED isolation both transactions read the seat as free before either writes",
+            "A transaction does not serialise concurrent transactions",
+            "Optimistic locking: a @Version column, and retry or fail on an optimistic lock exception",
+            "Pessimistic locking: SELECT ... FOR UPDATE (@Lock(PESSIMISTIC_WRITE)) so the second booking waits",
+            "Or a conditional update (UPDATE ... WHERE available) or a unique constraint, checking the affected row count"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "security",
+      "subtopics": ["Filter chain", "Authentication", "Authorization", "JWT and sessions", "CSRF and CORS"],
+      "misconceptions": [
+        "A JWT is encrypted, so its contents are secret",
+        "CORS protects the server from malicious requests",
+        "Hashing passwords with SHA-256 is enough"
+      ],
+      "references": ["spring-boot/security.md"],
+      "templates": [
+        {
+          "id": "spring-security-flow", "type": "INTERNALS", "subtopic": "Filter chain", "levels": [2, 4],
+          "question": "How does Spring Security authenticate and authorize an incoming request?",
+          "keyPoints": [
+            "Requests pass through a servlet filter (FilterChainProxy) that selects the matching SecurityFilterChain",
+            "Authentication filters extract credentials (form login, HTTP Basic, a bearer token) and an AuthenticationManager with its providers verifies them",
+            "The result is stored in the SecurityContext, held per thread by the SecurityContextHolder",
+            "Authorization checks the rules (authorizeHttpRequests, @PreAuthorize) against the user's authorities",
+            "A missing or invalid authentication gives 401; an authenticated user without permission gets 403"
+          ]
+        },
+        {
+          "id": "spring-session-vs-jwt", "type": "CONCEPT", "subtopic": "JWT and sessions", "levels": [2, 4],
+          "question": "What are the trade-offs between server-side sessions and JWT access tokens for a REST API?",
+          "keyPoints": [
+            "With sessions the server keeps the state and the client holds a session id cookie; revoking is easy",
+            "Scaling sessions needs sticky sessions or a shared session store",
+            "A JWT is a self-contained signed token that any instance can verify without a lookup",
+            "A JWT is hard to revoke before it expires, so access tokens are short-lived and renewed with refresh tokens",
+            "A JWT payload is only encoded and signed, not encrypted, so it must not carry secrets"
+          ]
+        },
+        {
+          "id": "spring-ownership-checks", "type": "SCENARIO", "subtopic": "Authorization", "levels": [2, 4],
+          "question": "Users may only see and edit their own orders, and administrators may see all orders. How would you enforce that in a Spring Boot API?",
+          "keyPoints": [
+            "Role checks for administrator endpoints at the URL or method level (hasRole, @PreAuthorize)",
+            "Ownership must be checked against the data: compare the order's owner with the authenticated user, or scope the query by owner",
+            "Answer another user's id with 404 or 403 consistently, without revealing whether it exists",
+            "Test that one user cannot reach another user's resources by changing the id (IDOR)"
+          ]
+        },
+        {
+          "id": "spring-post-forbidden", "type": "DEBUGGING", "subtopic": "CSRF and CORS", "levels": [2, 4],
+          "question": "A React app on localhost:5173 calls a Spring Boot API on localhost:8080. GET requests work, but POST requests fail with 403. What are the likely causes?",
+          "keyPoints": [
+            "Spring Security enables CSRF protection by default and rejects state-changing requests without a CSRF token",
+            "For a stateless API authenticated by a bearer token CSRF protection can be disabled; with session cookies the token must be sent",
+            "The CORS preflight (OPTIONS) must be allowed and the origin configured in the security configuration, otherwise Spring rejects it",
+            "The browser console and the response tell a CORS failure apart from a rejection by the server"
+          ]
+        },
+        {
+          "id": "spring-password-storage", "type": "CONCEPT", "subtopic": "Authentication", "levels": [2, 3],
+          "question": "How should a Spring Boot application store user passwords, and why?",
+          "keyPoints": [
+            "Never in plain text or with reversible encryption",
+            "Use a slow, salted, adaptive hash such as BCrypt, Argon2 or PBKDF2 through a PasswordEncoder",
+            "The salt makes equal passwords hash differently and defeats precomputed tables",
+            "The work factor slows down brute force and can be raised over time",
+            "Fast hashes such as SHA-256 are unsuitable for passwords"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "testing",
+      "subtopics": ["Unit and integration tests", "Test slices", "Mocking", "Testing against the real database"],
+      "misconceptions": [
+        "@SpringBootTest is the right choice for every test",
+        "Mocking the repository proves that the query works",
+        "An in-memory database behaves like the production database"
+      ],
+      "references": ["spring-boot/testing.md"],
+      "templates": [
+        {
+          "id": "spring-test-slices", "type": "CONCEPT", "subtopic": "Test slices", "levels": [2, 4],
+          "question": "What is the difference between @SpringBootTest, @WebMvcTest and @DataJpaTest, and when would you use each?",
+          "keyPoints": [
+            "@SpringBootTest starts the whole application context (optionally a real server): realistic but slow",
+            "@WebMvcTest loads only the web layer and tests controllers through MockMvc with the services mocked",
+            "@DataJpaTest loads the JPA components and repositories, each test in a transaction rolled back at the end",
+            "Slices start faster and point failures to one layer"
+          ]
+        },
+        {
+          "id": "spring-unit-test-with-mocks", "type": "SCENARIO", "subtopic": "Mocking", "levels": [2, 4],
+          "question": "How would you unit test an OrderService that calls a PaymentClient and an OrderRepository, including the case where the payment fails?",
+          "keyPoints": [
+            "A plain JUnit test that passes Mockito mocks to the constructor; no Spring context is needed",
+            "Stub the payment client to succeed in one test and to throw in another",
+            "Assert the outcome and verify the important interactions, for example that the order is not saved as paid when the payment fails",
+            "Test behaviour rather than implementation details, and do not mock simple value objects"
+          ]
+        },
+        {
+          "id": "spring-h2-vs-postgres", "type": "DEBUGGING", "subtopic": "Testing against the real database", "levels": [2, 4],
+          "question": "Repository tests pass against H2, but the same queries fail in production on PostgreSQL. Why does that happen, and how would you change the tests?",
+          "keyPoints": [
+            "H2 differs from PostgreSQL in SQL dialect, data types, functions, constraints and locking",
+            "Native queries and PostgreSQL features (jsonb, arrays, ON CONFLICT) behave differently or do not exist in H2",
+            "Run the integration tests against a real PostgreSQL with Testcontainers",
+            "Apply the same schema migrations (Flyway or Liquibase) in the tests as in production"
+          ]
+        },
+        {
+          "id": "spring-test-strategy", "type": "CONCEPT", "subtopic": "Unit and integration tests", "levels": [2, 3],
+          "question": "How do you decide what to cover with unit tests and what with integration tests in a Spring Boot service?",
+          "keyPoints": [
+            "Unit tests cover business logic in isolation: fast, numerous and precise when they fail",
+            "Integration tests cover wiring and boundaries: queries, the HTTP layer, serialisation, transactions and security configuration",
+            "Mocks cannot show that real infrastructure behaves as assumed",
+            "Many unit tests, fewer integration tests and a few end-to-end tests (the test pyramid)"
+          ]
+        }
+      ]
+    }
+  ]
+}

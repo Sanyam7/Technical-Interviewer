@@ -1,0 +1,21 @@
+# Local development: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+app:
+  security:
+    jwt:
+      # No JWT_SECRET needed on a developer's machine: a random key is generated at startup (with a warning).
+      # Access tokens stop working when the application restarts.
+      allow-ephemeral-secret: true
+    refresh-cookie:
+      # Plain http://localhost: a Secure cookie would never be sent back.
+      secure: false
+  execution:
+    # Run candidate code in Docker on a developer machine (AI_ARCHITECTURE.md 2.11). Without a Docker daemon, runs fail soft:
+    # "Run examples" answers 503 and submissions are reviewed by the AI only. CODE_EXECUTION_ENABLED=false turns it off.
+    enabled: ${CODE_EXECUTION_ENABLED:true}

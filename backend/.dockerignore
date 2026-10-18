@@ -1,0 +1,8 @@
+# Only the sources and the build files go into the image build.
+target/
+.idea/
+.vscode/
+*.iml
+.env
+.env.*
+**/*.log

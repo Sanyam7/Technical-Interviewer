@@ -1,0 +1,346 @@
+{
+  "skill": "postgresql",
+  "topics": [
+    {
+      "topic": "sql-fundamentals",
+      "subtopics": ["Joins", "Aggregation and GROUP BY", "Window functions", "Subqueries and CTEs", "NULL semantics"],
+      "misconceptions": [
+        "NULL = NULL is true",
+        "WHERE can filter on the result of an aggregate",
+        "A LEFT JOIN keeps unmatched rows even when the right table is filtered in WHERE",
+        "COUNT(column) counts NULLs"
+      ],
+      "references": ["sql/sql-fundamentals.md"],
+      "templates": [
+        {
+          "id": "sql-joins", "type": "CONCEPT", "subtopic": "Joins", "levels": [1, 3],
+          "question": "Explain the difference between INNER JOIN, LEFT JOIN and FULL OUTER JOIN. Why can a condition placed in WHERE instead of ON change the result of a LEFT JOIN?",
+          "keyPoints": [
+            "An inner join returns only rows that match on both sides",
+            "A left join keeps every row of the left table, with NULLs for the right columns where nothing matches",
+            "A full outer join keeps unmatched rows of both tables",
+            "A WHERE condition on the right table runs after the join and removes the NULL-extended rows, turning the left join into an inner join",
+            "Filters on the right table that should keep unmatched rows belong in the ON clause"
+          ]
+        },
+        {
+          "id": "sql-where-having", "type": "CONCEPT", "subtopic": "Aggregation and GROUP BY", "levels": [1, 3],
+          "question": "What is the difference between WHERE and HAVING? Write a query that finds the customers with more than five orders in the last month.",
+          "keyPoints": [
+            "Logical order: FROM and JOIN, then WHERE, GROUP BY, HAVING, SELECT, ORDER BY",
+            "WHERE filters rows before grouping; HAVING filters groups after aggregation",
+            "WHERE order_date >= now() - interval '1 month' GROUP BY customer_id HAVING COUNT(*) > 5",
+            "Every selected column that is not aggregated must be in GROUP BY"
+          ]
+        },
+        {
+          "id": "sql-window-latest", "type": "INTERNALS", "subtopic": "Window functions", "levels": [2, 3],
+          "question": "How do window functions differ from GROUP BY? How would you get each customer's most recent order?",
+          "keyPoints": [
+            "A window function computes over rows related to the current row without collapsing them (OVER, PARTITION BY, ORDER BY)",
+            "GROUP BY collapses each group into one row",
+            "ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY created_at DESC), then keep row number 1 in an outer query or CTE",
+            "Window functions are evaluated after WHERE, so they cannot be filtered in the same WHERE",
+            "PostgreSQL also offers DISTINCT ON (customer_id) with a matching ORDER BY"
+          ]
+        },
+        {
+          "id": "sql-null-filtering", "type": "DEBUGGING", "subtopic": "NULL semantics", "levels": [1, 3],
+          "question": "A report query with WHERE status <> 'CANCELLED' is missing the orders whose status is NULL, and another query using NOT IN (subquery) returns no rows at all. Why?",
+          "keyPoints": [
+            "A comparison with NULL is UNKNOWN, not true, so rows with a NULL status are filtered out",
+            "Use IS NULL, IS DISTINCT FROM or COALESCE when NULLs must be kept",
+            "If the NOT IN subquery returns a NULL, every comparison is UNKNOWN and no row qualifies",
+            "NOT EXISTS does not have this problem",
+            "COUNT(column) skips NULLs; COUNT(*) counts rows"
+          ]
+        },
+        {
+          "id": "sql-top-n-per-group", "type": "SCENARIO", "subtopic": "Subqueries and CTEs", "levels": [2, 3],
+          "question": "You need the three products with the highest revenue in each category. How would you write that query, and why?",
+          "keyPoints": [
+            "Aggregate the revenue per product first (SUM of quantity times price, grouped by product and category)",
+            "Rank within each category with a window function partitioned by category and ordered by revenue descending",
+            "Keep the rows with rank 3 or less in an outer query or CTE",
+            "Choose ROW_NUMBER, RANK or DENSE_RANK depending on how ties should count",
+            "CTEs make the steps readable"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "schema-design-normalization",
+      "subtopics": ["Normalization", "Keys and constraints", "Denormalization", "Data types"],
+      "misconceptions": [
+        "Foreign keys are only documentation",
+        "Normalised schemas are always slow",
+        "Floating-point columns are fine for money",
+        "A surrogate key makes unique constraints on natural keys unnecessary"
+      ],
+      "references": ["databases/schema-design-normalization.md"],
+      "templates": [
+        {
+          "id": "db-normal-forms", "type": "CONCEPT", "subtopic": "Normalization", "levels": [1, 3],
+          "question": "What is normalization, and which problems do first, second and third normal form prevent?",
+          "keyPoints": [
+            "Normalization stores each fact once, which prevents update, insert and delete anomalies",
+            "First normal form: atomic values and no repeating groups",
+            "Second normal form: no attribute depends on only part of a composite key",
+            "Third normal form: no attribute depends on another non-key attribute (no transitive dependencies)",
+            "Example: a customer's address repeated on every order row goes out of sync when it changes"
+          ]
+        },
+        {
+          "id": "db-constraints-in-database", "type": "CONCEPT", "subtopic": "Keys and constraints", "levels": [1, 3],
+          "question": "What are primary keys, foreign keys and unique constraints for, and why enforce them in the database rather than only in application code?",
+          "keyPoints": [
+            "A primary key identifies a row; it is unique and not null",
+            "A foreign key enforces referential integrity: no orphaned rows, with a defined ON DELETE behaviour",
+            "A unique constraint protects natural keys such as an email address even when the table has a surrogate id",
+            "Database constraints hold for every client and under concurrency, while an application check-then-insert has a race condition"
+          ]
+        },
+        {
+          "id": "db-denormalize-or-not", "type": "SCENARIO", "subtopic": "Denormalization", "levels": [2, 4],
+          "question": "An order-history page joins six tables and is slow. A teammate proposes copying the customer name and product title into the orders table. When is that reasonable, and what do you have to handle?",
+          "keyPoints": [
+            "Denormalization trades write complexity and storage for faster reads",
+            "Check the query plans and indexes before restructuring",
+            "Some copies are facts of their own: the product title at the time of purchase belongs to the order",
+            "Copies that must stay current need to be kept in sync on every change",
+            "Alternatives: a materialised view, a read model, or caching"
+          ]
+        },
+        {
+          "id": "db-money-floats", "type": "DEBUGGING", "subtopic": "Data types", "levels": [1, 3],
+          "question": "Invoice totals are sometimes off by a cent. The amounts are stored in a DOUBLE PRECISION column and summed in SQL. What is wrong, and how do you fix it?",
+          "keyPoints": [
+            "Binary floating-point cannot represent most decimal fractions exactly, so sums accumulate rounding errors",
+            "Use NUMERIC (DECIMAL) with a fixed scale, or integer minor units such as cents",
+            "Use BigDecimal or an equivalent in the application code",
+            "Define the rounding rules explicitly, and convert the existing data carefully"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "indexing",
+      "subtopics": ["B-tree indexes", "Composite indexes", "When an index is not used", "Index types"],
+      "misconceptions": [
+        "More indexes always make the database faster",
+        "An index on (a, b) also serves queries that filter only on b",
+        "The database uses an index whenever one exists on the filtered column"
+      ],
+      "references": ["databases/indexing.md", "sql/query-planning.md"],
+      "templates": [
+        {
+          "id": "db-btree-index", "type": "INTERNALS", "subtopic": "B-tree indexes", "levels": [2, 4],
+          "question": "How does a B-tree index speed up a query, and what does an index cost?",
+          "keyPoints": [
+            "A balanced tree of sorted keys with pointers to the rows finds a key in O(log n) instead of scanning the table",
+            "It supports equality, ranges and ORDER BY on the indexed columns",
+            "Every insert, update and delete must also maintain each index, which costs write time and storage",
+            "Unused indexes are pure cost, and columns with few distinct values gain little"
+          ]
+        },
+        {
+          "id": "db-composite-index", "type": "CONCEPT", "subtopic": "Composite indexes", "levels": [2, 4],
+          "question": "Why does the column order of a composite index on (customer_id, created_at) matter? Which queries can use it?",
+          "keyPoints": [
+            "The index is sorted by customer_id first and by created_at within each customer",
+            "It serves WHERE customer_id = ? and WHERE customer_id = ? AND created_at > ?, and the ORDER BY created_at of one customer",
+            "It does not serve a filter on created_at alone efficiently (leftmost prefix rule)",
+            "Put columns compared for equality before columns compared by range",
+            "INCLUDE columns can make it a covering index for an index-only scan"
+          ]
+        },
+        {
+          "id": "db-index-ignored", "type": "DEBUGGING", "subtopic": "When an index is not used", "levels": [3, 5],
+          "question": "A query filtering on email is slow although email has an index, and EXPLAIN shows a sequential scan. What could cause it?",
+          "keyPoints": [
+            "The query wraps the column in a function or cast, such as lower(email), so an expression index on lower(email) is needed",
+            "A type mismatch forces a cast on the column",
+            "A pattern with a leading wildcard (LIKE '%x') cannot use a B-tree",
+            "For a small table, or a filter that matches many rows, a sequential scan is cheaper",
+            "Stale statistics mislead the planner: run ANALYZE and check with EXPLAIN ANALYZE"
+          ]
+        },
+        {
+          "id": "db-search-indexes", "type": "SCENARIO", "subtopic": "Index types", "levels": [2, 4],
+          "question": "Users search products by name with ILIKE '%term%' and filter by attributes stored in a jsonb column. Which index types would you consider in PostgreSQL?",
+          "keyPoints": [
+            "A B-tree cannot serve a pattern with a leading wildcard",
+            "A trigram index (pg_trgm) with GIN or GiST supports ILIKE '%term%'",
+            "A GIN index on the jsonb column supports containment queries (@>)",
+            "Full-text search with tsvector and a GIN index suits searching for words",
+            "Partial indexes cover frequently filtered subsets; check every choice with EXPLAIN ANALYZE"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "query-planning",
+      "subtopics": ["EXPLAIN and EXPLAIN ANALYZE", "Join strategies", "Statistics", "Slow queries"],
+      "misconceptions": [
+        "EXPLAIN shows the real execution time",
+        "An index scan is always better than a sequential scan",
+        "The planner knows the actual row counts in advance"
+      ],
+      "references": ["sql/query-planning.md"],
+      "templates": [
+        {
+          "id": "db-explain", "type": "CONCEPT", "subtopic": "EXPLAIN and EXPLAIN ANALYZE", "levels": [3, 4],
+          "question": "What is the difference between EXPLAIN and EXPLAIN ANALYZE in PostgreSQL, and what do you look for in the output for a slow query?",
+          "keyPoints": [
+            "EXPLAIN shows the chosen plan with estimated costs and row counts without running the query",
+            "EXPLAIN ANALYZE runs the query and adds the actual time, rows and loops per node; run writes inside a transaction you roll back",
+            "Large differences between estimated and actual rows point to bad estimates",
+            "Look for the most expensive nodes: sequential scans of large tables, nested loops over many rows, sorts spilling to disk",
+            "The BUFFERS option shows how much data was read"
+          ]
+        },
+        {
+          "id": "db-join-algorithms", "type": "INTERNALS", "subtopic": "Join strategies", "levels": [4, 5],
+          "question": "PostgreSQL can join with a nested loop, a hash join or a merge join. When is each a good choice?",
+          "keyPoints": [
+            "Nested loop: for each outer row look up the inner side, ideally with an index; good when the outer side is small",
+            "Hash join: build a hash table on the smaller input and probe it; good for large equality joins, limited by work_mem",
+            "Merge join: walk two inputs sorted on the join key; good for large inputs that are already sorted or indexed",
+            "The planner chooses by its row estimates and costs"
+          ]
+        },
+        {
+          "id": "db-stale-statistics", "type": "DEBUGGING", "subtopic": "Statistics", "levels": [4, 5],
+          "question": "After a bulk import, a query that took milliseconds now takes minutes. EXPLAIN ANALYZE shows 1 row estimated and 500,000 actual for one node. What happened, and what do you do?",
+          "keyPoints": [
+            "The planner's statistics are stale after the large data change, so its row estimates are far off",
+            "A bad estimate leads to a bad plan, such as a nested loop over half a million rows",
+            "Run ANALYZE on the table; autovacuum may not have caught up yet",
+            "For correlated columns create extended statistics; for skewed data raise the statistics target"
+          ]
+        },
+        {
+          "id": "db-dashboard-query", "type": "SCENARIO", "subtopic": "Slow queries", "levels": [3, 5],
+          "question": "A dashboard query counts orders per status for the last 7 days in a table of 50 million rows and takes 20 seconds. How would you make it fast?",
+          "keyPoints": [
+            "Read the plan with EXPLAIN (ANALYZE, BUFFERS) first",
+            "An index on created_at, or on (created_at, status), lets it read only the recent rows",
+            "An index-only scan needs a covering index and a recently vacuumed table",
+            "Partition very large tables by time",
+            "If the query runs often, pre-aggregate in a summary table or materialised view"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "transactions-isolation",
+      "subtopics": ["ACID", "Isolation levels and anomalies", "MVCC"],
+      "misconceptions": [
+        "READ COMMITTED prevents lost updates",
+        "In PostgreSQL readers block writers",
+        "SERIALIZABLE in PostgreSQL works by locking whole tables"
+      ],
+      "references": ["databases/transactions-isolation.md"],
+      "templates": [
+        {
+          "id": "db-acid", "type": "CONCEPT", "subtopic": "ACID", "levels": [2, 3],
+          "question": "What do the four ACID properties mean in practice for an application that transfers money between accounts?",
+          "keyPoints": [
+            "Atomicity: the debit and the credit both happen or neither does",
+            "Consistency: the constraints, such as foreign keys or a non-negative balance, hold before and after",
+            "Isolation: concurrent transfers do not see or disturb each other's unfinished work",
+            "Durability: a committed transfer survives a crash (the write-ahead log)"
+          ]
+        },
+        {
+          "id": "db-isolation-levels", "type": "CONCEPT", "subtopic": "Isolation levels and anomalies", "levels": [3, 5],
+          "question": "Explain the isolation levels and the anomalies each one prevents. What does PostgreSQL use by default?",
+          "keyPoints": [
+            "Anomalies: dirty reads, non-repeatable reads, phantom reads, lost updates and write skew",
+            "READ COMMITTED, REPEATABLE READ and SERIALIZABLE prevent progressively more of them (PostgreSQL treats READ UNCOMMITTED as READ COMMITTED)",
+            "PostgreSQL defaults to READ COMMITTED: each statement sees the data committed before it began",
+            "PostgreSQL's REPEATABLE READ is snapshot isolation: no phantoms, but write skew is possible",
+            "SERIALIZABLE detects conflicts and aborts a transaction, which the application must retry"
+          ]
+        },
+        {
+          "id": "db-mvcc", "type": "INTERNALS", "subtopic": "MVCC", "levels": [3, 5],
+          "question": "How does MVCC let readers and writers work at the same time in PostgreSQL, and what does VACUUM have to do with it?",
+          "keyPoints": [
+            "An update writes a new version of the row instead of overwriting it",
+            "Each transaction sees a snapshot: the row versions committed before its snapshot was taken",
+            "Readers do not block writers and writers do not block readers",
+            "Dead row versions pile up until VACUUM (autovacuum) reclaims them; it also prevents transaction-id wraparound",
+            "A long-running transaction keeps old versions alive and causes bloat"
+          ]
+        },
+        {
+          "id": "db-lost-update", "type": "SCENARIO", "subtopic": "Isolation levels and anomalies", "levels": [3, 5],
+          "question": "Two requests read a product's stock of 10, each subtracts its quantity in Java and writes the result back. The final stock is wrong. How would you fix it?",
+          "keyPoints": [
+            "A lost update: both read the same value and the second write overwrites the first",
+            "Update atomically in SQL: UPDATE ... SET stock = stock - ? WHERE id = ? AND stock >= ?, and check the affected row count",
+            "Or lock the row first with SELECT ... FOR UPDATE",
+            "Or use optimistic locking with a version column and retry on conflict",
+            "SERIALIZABLE with retries also works"
+          ]
+        }
+      ]
+    },
+    {
+      "topic": "locking-concurrency",
+      "subtopics": ["Optimistic and pessimistic locking", "Deadlocks", "Row locks", "Job queues in the database"],
+      "misconceptions": [
+        "A SELECT always takes locks in PostgreSQL",
+        "A higher isolation level prevents deadlocks",
+        "Optimistic locking needs no handling in the application"
+      ],
+      "references": ["databases/locking-concurrency.md"],
+      "templates": [
+        {
+          "id": "db-optimistic-vs-pessimistic", "type": "CONCEPT", "subtopic": "Optimistic and pessimistic locking", "levels": [3, 5],
+          "question": "Compare optimistic and pessimistic locking. When would you choose each?",
+          "keyPoints": [
+            "Pessimistic locking locks the row before changing it (SELECT ... FOR UPDATE), so others wait",
+            "It suits frequent conflicts and expensive retries, at the risk of waiting and deadlocks",
+            "Optimistic locking takes no lock and checks a version at update time (UPDATE ... WHERE version = ?)",
+            "A conflict makes the update fail, and the application must retry or report it",
+            "It suits rare conflicts and long user think times"
+          ]
+        },
+        {
+          "id": "db-deadlock-detected", "type": "DEBUGGING", "subtopic": "Deadlocks", "levels": [3, 5],
+          "question": "The logs show ERROR: deadlock detected for two transactions updating the same tables. How do you find the cause, and how do you prevent it?",
+          "keyPoints": [
+            "Each transaction holds a lock the other one needs; PostgreSQL detects the cycle and aborts one of them",
+            "The log entry names the statements and the locks involved",
+            "Prevent it by locking rows in a consistent order, for example by id",
+            "Keep transactions short, and retry the aborted transaction"
+          ]
+        },
+        {
+          "id": "db-skip-locked", "type": "SCENARIO", "subtopic": "Job queues in the database", "levels": [4, 5],
+          "question": "Several worker instances poll a jobs table for pending jobs, and sometimes two workers process the same job. How would you make picking up jobs safe with PostgreSQL?",
+          "keyPoints": [
+            "Two workers read the same pending row before either marks it as taken",
+            "Claim jobs atomically inside a transaction with SELECT ... FOR UPDATE SKIP LOCKED LIMIT n, then mark them running",
+            "SKIP LOCKED lets each worker take different rows without waiting",
+            "A single UPDATE ... WHERE status = 'PENDING' ... RETURNING also claims atomically",
+            "A lease or timeout returns the jobs of crashed workers"
+          ]
+        },
+        {
+          "id": "db-update-row-locks", "type": "INTERNALS", "subtopic": "Row locks", "levels": [3, 4],
+          "question": "What locks does an UPDATE take in PostgreSQL, and what happens to another transaction that updates the same row at the same time?",
+          "keyPoints": [
+            "An UPDATE locks the rows it changes until its transaction ends",
+            "A second transaction updating the same row waits until the first commits or rolls back",
+            "Under READ COMMITTED it then re-checks the row and applies its update to the new version",
+            "Under REPEATABLE READ or SERIALIZABLE it fails with a serialization error instead",
+            "A plain SELECT takes no row locks"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "type": "object",
+  "description": "The written part of an interview report. Scores are shown by the system, not taken from this text.",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "description": "Three to five sentences, at most 2000 characters."
+    },
+    "strengths": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": { "type": "string" },
+            "description": "References of the evaluated answers that show it."
+          }
+        },
+        "required": ["text", "evidence"],
+        "additionalProperties": false
+      }
+    },
+    "improvementAreas": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 10,
+            "items": { "type": "string" }
+          }
+        },
+        "required": ["text", "evidence"],
+        "additionalProperties": false
+      }
+    },
+    "studyPlan": {
+      "type": "array",
+      "maxItems": 10,
+      "items": { "type": "string" },
+      "description": "Concrete next steps, at most 500 characters each."
+    }
+  },
+  "required": ["summary", "strengths", "improvementAreas", "studyPlan"],
+  "additionalProperties": false
+}

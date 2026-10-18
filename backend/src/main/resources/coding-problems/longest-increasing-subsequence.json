@@ -1,0 +1,51 @@
+{
+  "id": "longest-increasing-subsequence",
+  "title": "Longest Increasing Subsequence",
+  "difficulty": 4,
+  "statement": "Given an integer array `nums`, return the length of the longest strictly increasing subsequence.\n\nA subsequence keeps the order of the elements but may skip some of them.",
+  "constraints": [
+    "1 <= nums.length <= 2 * 10^5",
+    "-10^4 <= nums[i] <= 2 * 10^5"
+  ],
+  "signature": {
+    "name": "lengthOfLIS",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      }
+    ],
+    "returns": "int"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Keeps, for every length, the smallest possible tail of an increasing subsequence of that length"
+    },
+    {
+      "id": "kp2",
+      "text": "Uses binary search to place each element, for O(n log n) instead of the O(n^2) dynamic programme"
+    },
+    {
+      "id": "kp3",
+      "text": "Treats equal values as not increasing (strictly increasing)"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[10, 9, 2, 5, 3, 7, 101, 18]], "expected": 4, "explanation": "One longest subsequence is [2,3,7,101]."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[0, 1, 0, 3, 2, 3]], "expected": 4},
+    {"name": "increasing run in the middle", "category": "GENERAL", "args": [[5, 1, 2, 3, 0, 4]], "expected": 4},
+    {"name": "negative values", "category": "GENERAL", "args": [[-3, -1, -2, 0, 2]], "expected": 4},
+    {"name": "zigzag", "category": "GENERAL", "args": [[1, 3, 2, 4, 3, 5]], "expected": 4},
+    {"name": "single element", "category": "EDGE", "args": [[7]], "expected": 1},
+    {"name": "all equal", "category": "EDGE", "args": [[7, 7, 7, 7]], "expected": 1},
+    {"name": "strictly decreasing", "category": "EDGE", "args": [[5, 4, 3, 2, 1]], "expected": 1},
+    {"name": "long increasing array", "category": "PERFORMANCE", "args": [{"$range": [1, 200000]}], "expected": 200000}
+  ]
+}

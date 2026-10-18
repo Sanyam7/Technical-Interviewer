@@ -1,0 +1,189 @@
+{
+  "type": "object",
+  "description": "A structured profile of the candidate, every item resting on words copied from the résumé.",
+  "properties": {
+    "positions": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "Roles the candidate held, in résumé order.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "The job title as written."
+          },
+          "organization": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The employer as written; null when the résumé names none."
+          },
+          "start": {
+            "type": "string",
+            "description": "First month as YYYY-MM, or YYYY when only the year is given."
+          },
+          "end": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Last month as YYYY-MM or YYYY; \"present\" for a current role; null when unknown."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "The résumé line with the title (and dates when they are on it), copied exactly, at most 300 characters."
+          }
+        },
+        "required": [
+          "title",
+          "organization",
+          "start",
+          "end",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "statedYears": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "maximum": 60,
+      "description": "Years of professional experience the résumé states in so many words (\"8 years of experience\"); null when it states none. Never computed."
+    },
+    "statedYearsEvidence": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "The words that state those years, copied exactly; null when statedYears is null."
+    },
+    "technologies": {
+      "type": "array",
+      "maxItems": 30,
+      "description": "Languages, frameworks, databases, platforms and tools the résumé names.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A short name, at most 60 characters."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "The résumé words that show it, copied exactly, at most 300 characters."
+          }
+        },
+        "required": [
+          "name",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "skills": {
+      "type": "array",
+      "maxItems": 12,
+      "description": "Abilities other than technologies that the résumé itself shows, each with its words; empty rather than guessed.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A short name, at most 60 characters."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "The résumé words that show it, copied exactly, at most 300 characters."
+          }
+        },
+        "required": [
+          "name",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "domains": {
+      "type": "array",
+      "maxItems": 6,
+      "description": "Business domains of the candidate's work as the résumé names them, each with its words; empty when it names none.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "A short name, at most 60 characters."
+          },
+          "evidence": {
+            "type": "string",
+            "description": "The résumé words that show it, copied exactly, at most 300 characters."
+          }
+        },
+        "required": [
+          "name",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "experiences": {
+      "type": "array",
+      "maxItems": 20,
+      "description": "Concrete projects, responsibilities and achievements, in résumé order, each one statement of the résumé.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "PROJECT",
+              "RESPONSIBILITY",
+              "ACHIEVEMENT"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "The statement copied exactly from the résumé (one bullet or sentence), at most 300 characters."
+          },
+          "context": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The role and employer, or the project name, it belongs to, as written; null when unclear."
+          },
+          "technologies": {
+            "type": "array",
+            "maxItems": 8,
+            "items": {
+              "type": "string"
+            },
+            "description": "Technologies the statement itself names."
+          }
+        },
+        "required": [
+          "kind",
+          "text",
+          "context",
+          "technologies"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "positions",
+    "statedYears",
+    "statedYearsEvidence",
+    "technologies",
+    "skills",
+    "domains",
+    "experiences"
+  ],
+  "additionalProperties": false
+}

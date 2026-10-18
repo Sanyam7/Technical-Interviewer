@@ -1,0 +1,56 @@
+{
+  "id": "top-k-frequent",
+  "title": "Top K Frequent Elements",
+  "difficulty": 3,
+  "statement": "Given an integer array `nums` and an integer `k`, return the `k` most frequent values.\n\nOrder the result by frequency, highest first; when two values are equally frequent, the smaller value comes first.",
+  "constraints": [
+    "1 <= nums.length <= 2 * 10^5",
+    "-10^4 <= nums[i] <= 2 * 10^5",
+    "1 <= k <= number of distinct values"
+  ],
+  "signature": {
+    "name": "topKFrequent",
+    "params": [
+      {
+        "name": "nums",
+        "type": "int[]"
+      },
+      {
+        "name": "k",
+        "type": "int"
+      }
+    ],
+    "returns": "int[]"
+  },
+  "comparison": "EXACT",
+  "timeLimitMs": 2000,
+  "complexity": {
+    "time": "O(n log n)",
+    "space": "O(n)"
+  },
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "Counts frequencies with a hash map in one pass"
+    },
+    {
+      "id": "kp2",
+      "text": "Selects the k most frequent with sorting, a heap of size k or bucket sort"
+    },
+    {
+      "id": "kp3",
+      "text": "Breaks ties by the smaller value, as the problem requires"
+    }
+  ],
+  "tests": [
+    {"name": "Example 1", "category": "EXAMPLE", "args": [[1, 1, 1, 2, 2, 3], 2], "expected": [1, 2], "explanation": "1 appears three times, 2 twice."},
+    {"name": "Example 2", "category": "EXAMPLE", "args": [[1], 1], "expected": [1]},
+    {"name": "negative values", "category": "GENERAL", "args": [[-1, -1, 2, 2, 2, 3, -1, 4], 2], "expected": [-1, 2]},
+    {"name": "k equals distinct count", "category": "GENERAL", "args": [[5, 3, 5, 3, 1], 3], "expected": [3, 5, 1]},
+    {"name": "unsorted input", "category": "GENERAL", "args": [[9, 3, 9, 7, 3, 9], 1], "expected": [9]},
+    {"name": "tie broken by smaller value", "category": "EDGE", "args": [[4, 4, 1, 1, 2], 2], "expected": [1, 4]},
+    {"name": "all distinct", "category": "EDGE", "args": [[3, 1, 2], 2], "expected": [1, 2]},
+    {"name": "single value repeated", "category": "EDGE", "args": [[7, 7, 7], 1], "expected": [7]},
+    {"name": "large array", "category": "PERFORMANCE", "args": [{"$concat": [{"$range": [1, 199950]}, {"$repeat": [7, 50]}]}, 1], "expected": [7]}
+  ]
+}

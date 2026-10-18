@@ -1,0 +1,56 @@
+{
+  "id": "notification-service",
+  "title": "Design a notification service",
+  "levels": [
+    2,
+    4
+  ],
+  "statement": "Product teams across the company want one service that sends notifications to users by push, email and SMS: order updates, security alerts and marketing campaigns. Teams call your service; it decides how to reach each user according to their preferences and delivers the message through third-party providers.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "50 million users; on average 20 million notifications per day, and campaigns of up to 10 million notifications at once.",
+    "Security alerts, such as a password change, must arrive within 30 seconds.",
+    "Users can opt out per channel and per category, and marketing must respect each user's quiet hours."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "accepts notification requests through an API and puts them on a queue, so senders are never blocked by delivery"
+    },
+    {
+      "id": "kp2",
+      "text": "keeps separate queues or priorities so a 10-million marketing campaign cannot delay security alerts"
+    },
+    {
+      "id": "kp3",
+      "text": "checks preferences, opt-outs and quiet hours before sending, from a preference store with caching"
+    },
+    {
+      "id": "kp4",
+      "text": "delivers through workers per channel that call the providers (APNs or FCM, email, SMS) with retries and backoff"
+    },
+    {
+      "id": "kp5",
+      "text": "makes sending idempotent with a notification id, so a retry never notifies a user twice"
+    },
+    {
+      "id": "kp6",
+      "text": "handles provider failures and rate limits with circuit breakers, a second provider and a dead-letter queue"
+    },
+    {
+      "id": "kp7",
+      "text": "tracks the delivery status of each notification for debugging and metrics"
+    },
+    {
+      "id": "kp8",
+      "text": "uses templates and per-user limits so users are not flooded with notifications"
+    }
+  ],
+  "probes": {
+    "MESSAGING": "A marketing campaign enqueues 10 million notifications at once. How do security alerts still arrive within 30 seconds?",
+    "RELIABILITY": "A worker crashes after calling the SMS provider but before recording the send. What happens, and can the user get two text messages?",
+    "FAILURE_HANDLING": "Your email provider starts timing out for 20 minutes. What does the system do?",
+    "DATA_MODEL": "How do you store user preferences and the delivery history? SQL or NoSQL, and why?",
+    "OBSERVABILITY": "How would you find out that push notifications to Android users silently stopped arriving?",
+    "API_DESIGN": "What does the API look like for a team that wants to send a notification?"
+  }
+}

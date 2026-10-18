@@ -1,0 +1,62 @@
+{
+  "id": "chat-system",
+  "title": "Design a chat application",
+  "levels": [
+    3,
+    5
+  ],
+  "statement": "Design the backend of a messaging app like WhatsApp or Slack direct messages: one-to-one chats and group chats of up to 500 members, with delivery and read receipts, online presence, and message history synchronised across a user's phone and laptop.\n\nClarify or state any other requirements and assumptions you need, then walk through your design.",
+  "facts": [
+    "100 million daily active users, each sending about 40 messages a day.",
+    "A message should reach an online recipient in under 500 ms.",
+    "Once the sender sees a message as sent, it must never be lost; history is kept forever."
+  ],
+  "keyPoints": [
+    {
+      "id": "kp1",
+      "text": "keeps persistent connections (for example WebSockets) from clients to stateless gateway servers and records which gateway holds each user's connection"
+    },
+    {
+      "id": "kp2",
+      "text": "estimates the scale: about 4 billion messages per day, around 46,000 per second on average with peaks several times higher"
+    },
+    {
+      "id": "kp3",
+      "text": "stores messages in a write-heavy store partitioned by conversation and ordered by time, such as a wide-column store or a sharded table"
+    },
+    {
+      "id": "kp4",
+      "text": "acknowledges a message to the sender only after it is durably stored, then routes it to the recipients' gateways"
+    },
+    {
+      "id": "kp5",
+      "text": "gives messages a per-conversation sequence number so clients order them and fetch what they missed"
+    },
+    {
+      "id": "kp6",
+      "text": "reaches offline users with push notifications and lets clients sync missed messages when they reconnect"
+    },
+    {
+      "id": "kp7",
+      "text": "fans out group messages efficiently, treating small and large groups differently"
+    },
+    {
+      "id": "kp8",
+      "text": "makes sending idempotent with a client-generated message id, so a retry does not create a duplicate"
+    },
+    {
+      "id": "kp9",
+      "text": "tracks presence with heartbeats and entries that expire, instead of a database write on every change"
+    }
+  ],
+  "probes": {
+    "SCALABILITY": "On New Year's Eve, message traffic increases 10x within minutes. What breaks first, and what do you change?",
+    "RELIABILITY": "The sender's phone loses its connection right after sending. How do you guarantee the message is neither lost nor delivered twice?",
+    "DATA_MODEL": "Would you store messages in SQL or NoSQL, and why? What is the partition key, and how do you fetch the last 50 messages of a conversation?",
+    "AVAILABILITY": "The gateway server holding 100,000 open connections crashes. What do those users experience, and how do they recover?",
+    "FAILURE_HANDLING": "The message store becomes slow and writes start timing out. What does the sender see, and what does your system do?",
+    "MESSAGING": "How does a message get from the sender's gateway server to the gateway that holds the recipient's connection?",
+    "SECURITY": "How would you add end-to-end encryption, and what does it change for your servers?",
+    "CACHING": "Where would caching help in this design, and where would it be dangerous?"
+  }
+}

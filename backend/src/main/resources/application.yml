@@ -1,0 +1,342 @@
+# Shared configuration. Values come from environment variables or from the repository's root .env file
+# (imported below, so `./mvnw spring-boot:run` from backend/ picks it up). Profiles: local, prod.
+spring:
+  application:
+    name: tech-interviewer
+  config:
+    import: optional:file:../.env[.properties]
+  autoconfigure:
+    # Accounts are authenticated by JWT bearer tokens and a refresh cookie, never by Spring's default in-memory
+    # user. Without this exclusion Spring Boot would create a default user with a random password that it
+    # prints to the log.
+    exclude: org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration
+  datasource:
+    # A full JDBC URL (JDBC_DATABASE_URL, without the credentials) replaces host, port and database when a host gives one.
+    url: ${JDBC_DATABASE_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:interviewer}?sslmode=${POSTGRES_SSLMODE:prefer}}
+    # POSTGRES_USER owns the schema and runs the migrations. When POSTGRES_APP_USER is set the application connects as that
+    # role instead, which can read and write rows and nothing else (db/ops/runtime-grants.sql; SECURITY.md DB-1).
+    username: ${POSTGRES_APP_USER:${POSTGRES_USER:interviewer}}
+    password: ${POSTGRES_APP_PASSWORD:${POSTGRES_PASSWORD}}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 5000
+      data-source-properties:
+        # pgjdbc timeouts, in seconds. Without them a connection to a frozen or unreachable database blocks until
+        # the operating system gives up (minutes). connectTimeout matches the pool's 5 s connection timeout.
+        # socketTimeout bounds one blocked read and must exceed the longest legitimate statement: queries here
+        # are millisecond lookups and the Flyway migrations of the catalogue-sized schema take well under a
+        # second, so 60 s leaves a wide margin (revisit it before adding a long-running bulk statement).
+        # cancelSignalTimeout bounds the extra connection pgjdbc opens to cancel a timed-out statement.
+        connectTimeout: 5
+        socketTimeout: 60
+        cancelSignalTimeout: 5
+  threads:
+    virtual:
+      enabled: true
+  servlet:
+    multipart:
+      # Only the résumé upload takes files (AI_ARCHITECTURE.md 2.13). The threshold above the request size keeps every upload
+      # in memory: a résumé is never written to disk, not even to a temporary file.
+      max-file-size: 2MB
+      max-request-size: 2112KB
+      file-size-threshold: 3MB
+  jpa:
+    open-in-view: false
+    hibernate:
+      # The schema is owned by Flyway. Hibernate only checks that entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    clean-disabled: true
+    baseline-on-migrate: false
+  jackson:
+    # Requests are parsed strictly: unknown properties, scalars of the wrong type ("45" for a number, 0 for an enum),
+    # fractions for integers and duplicate keys are rejected instead of being coerced into something plausible.
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      fail-on-unknown-properties: true
+      fail-on-trailing-tokens: true
+      accept-float-as-int: false
+    read:
+      strict-duplicate-detection: true
+    datatype:
+      datetime:
+        write-dates-as-timestamps: false
+      enum:
+        fail-on-numbers-for-enums: true
+
+server:
+  # Hosting platforms (Cloud Run, Render, Fly) tell the container its port in PORT.
+  port: ${SERVER_PORT:${PORT:8080}}
+  shutdown: graceful
+  error:
+    include-message: never
+    include-binding-errors: never
+    include-stacktrace: never
+    include-exception: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+  # The values below equal the defaults of AppProperties (a test keeps them equal); they are listed so the
+  # effective configuration is visible in one place.
+  security:
+    jwt:
+      # Base64 of at least 32 random bytes: openssl rand -base64 48. Required: the application refuses to start
+      # without it (except in the local profile, which generates a throw-away key).
+      secret: ${JWT_SECRET:}
+      issuer: tech-interviewer
+      access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
+    refresh-cookie:
+      name: refresh_token
+      secure: true
+      ttl: ${JWT_REFRESH_TOKEN_TTL:14d}
+      path: /api/v1/auth
+      # Lax when the app and the API share a site (one domain, or one origin behind a proxy). None when they are on two
+      # different sites (e.g. *.pages.dev and *.run.app): Safari still blocks such a cookie (README, Deployment).
+      same-site: ${APP_REFRESH_COOKIE_SAME_SITE:Lax}
+  rate-limit:
+    auth-per-minute: 10
+    answers-per-minute: 20
+    interviews-per-day: 10
+    writes-per-minute: 60
+    # "Run examples" starts a sandbox container each time.
+    code-runs-per-minute: 10
+    # A résumé upload is a model call over the whole document.
+    resume-uploads-per-hour: 10
+    # Failed sign-ins for one e-mail address (known or not) within the window; further attempts for it answer 429 until it passes.
+    login-failures-per-account: 10
+    login-failure-window: 15m
+  limits:
+    max-body-bytes: 262144
+    auth-max-body-bytes: 16384
+    # PUT /profile/resume: a 2 MiB file plus its multipart framing.
+    resume-max-body-bytes: 2162688
+  interview:
+    deadline-grace: 30s
+    max-follow-up-depth: 2
+    # Follow-ups of a system design problem, each probing the weakest dimension not probed yet (AI_ARCHITECTURE.md 2.12).
+    # The section's time stops them earlier. 0 to 6.
+    max-design-probes: 4
+  evaluation:
+    # An answer is evaluated at most max-attempts times (the first included); after that it is UNASSESSABLE, not zero.
+    max-attempts: 3
+    backoff-initial: 2s
+    backoff-max: 10s
+    attempt-lease: 90s
+    # Below this share of the intended assessment weight a report is INCONCLUSIVE (no overall score, no recommendation).
+    min-coverage: 0.70
+    # How answers are scored (AI_ARCHITECTURE.md 2.10). The model rates criteria 0-4; the server weighs them here.
+    # Every table names exactly its evaluator's criteria and adds up to 1, or the application refuses to start.
+    # The base tables are built in (RubricRegistry); replace one under "weights", for example:
+    #   weights:
+    #     technical: {correctness: 0.30, completeness: 0.10, depth: 0.20, practical-understanding: 0.15, reasoning: 0.15, communication: 0.10}
+    #     coding: {correctness: 0.35, algorithm: 0.15, time-complexity: 0.15, space-complexity: 0.05, edge-cases: 0.10, readability: 0.10, maintainability: 0.10}
+    #     system-design: {requirements: 0.10, high-level-design: 0.12, api-design: 0.06, data-model: 0.10, caching: 0.07, messaging: 0.06,
+    #                     scalability: 0.12, availability: 0.07, reliability: 0.07, failure-handling: 0.07, security: 0.05,
+    #                     observability: 0.04, trade-offs: 0.07}
+    # A skill profile adapts the evaluation to what a question is about: its weights replace the base table for questions on
+    # that catalog skill (a coding answer uses the profile of its language), and its focus areas tell the evaluator what
+    # matters most. The model never sees the weights.
+    scoring:
+      skills:
+        java:
+          focus:
+            - the Java memory model and what synchronization guarantees
+            - collections, their complexity and concurrent variants
+            - generics and type erasure
+            - JVM memory and garbage collection behaviour
+            - idiomatic modern Java (records, streams, Optional)
+          weights:
+            # Precise knowledge of the language and the JVM counts most.
+            technical: {correctness: 0.35, completeness: 0.10, depth: 0.25, practical-understanding: 0.15, reasoning: 0.10, communication: 0.05}
+            # Idiomatic, maintainable Java (types, collections, small classes) counts a little more than the base table.
+            coding: {correctness: 0.35, algorithm: 0.15, time-complexity: 0.15, space-complexity: 0.05, edge-cases: 0.10, readability: 0.08, maintainability: 0.12}
+        spring-boot:
+          focus:
+            - proxy-based behaviour (transactions, AOP) and its pitfalls
+            - auto-configuration and the bean lifecycle
+            - the persistence context, fetching and the N+1 problem
+            - production configuration, observability and testing
+          weights:
+            # Framework knowledge is shown by how it behaves in production.
+            technical: {correctness: 0.30, completeness: 0.10, depth: 0.15, practical-understanding: 0.25, reasoning: 0.10, communication: 0.10}
+        postgresql:
+          focus:
+            - how the planner uses indexes and statistics
+            - MVCC, isolation levels and locking
+            - diagnosing slow queries with EXPLAIN ANALYZE
+          weights:
+            technical: {correctness: 0.30, completeness: 0.10, depth: 0.20, practical-understanding: 0.20, reasoning: 0.15, communication: 0.05}
+        react:
+          focus:
+            - component architecture and composition
+            - state management - where state lives and how it flows
+            - rendering behaviour and performance (re-renders, memoization, keys)
+            - effects and their dependencies
+          weights:
+            # Component design, state and rendering performance are practical skills.
+            technical: {correctness: 0.25, completeness: 0.10, depth: 0.15, practical-understanding: 0.25, reasoning: 0.15, communication: 0.10}
+        typescript:
+          focus:
+            - the structural type system and narrowing
+            - generics and utility types
+            - type safety at runtime boundaries (parsing untrusted data)
+          weights:
+            technical: {correctness: 0.35, completeness: 0.10, depth: 0.20, practical-understanding: 0.15, reasoning: 0.10, communication: 0.10}
+            # Types that make the code readable carry the weight in TypeScript.
+            coding: {correctness: 0.35, algorithm: 0.15, time-complexity: 0.15, space-complexity: 0.05, edge-cases: 0.10, readability: 0.12, maintainability: 0.08}
+        # A coding language without a catalog skill: the profile only tells the evaluator what matters in JavaScript.
+        javascript:
+          focus:
+            - correct handling of numbers, strings and equality (=== versus ==)
+            - array and object methods, and their cost
+            - clear, side-effect-free functions
+        system-design:
+          focus:
+            - architecture - components and their responsibilities
+            - scalability - where load concentrates and how to spread it
+            - trade-offs between consistency, availability, latency and cost
+            - failure modes and recovery
+          weights:
+            # Architecture and scalability are argued, so reasoning about trade-offs counts most.
+            technical: {correctness: 0.20, completeness: 0.10, depth: 0.20, practical-understanding: 0.15, reasoning: 0.25, communication: 0.10}
+            # Design problems use the base system-design table (RubricRegistry): architecture and scalability weigh most there.
+  execution:
+    # Running candidate code (AI_ARCHITECTURE.md 2.11): a throw-away Docker container per run, no network, read-only root,
+    # bounded memory, CPU, processes and time. Off: coding answers are reviewed by the AI only and their correctness is
+    # capped as unverified. Needs a Docker daemon the backend may use; never mount the Docker socket into an untrusted host.
+    enabled: ${CODE_EXECUTION_ENABLED:false}
+    docker-command: ${DOCKER_COMMAND:docker}
+    # Stronger isolation where installed, for example runsc (gVisor). Blank: Docker's default runtime (shares the host kernel).
+    runtime: ${SANDBOX_RUNTIME:}
+    max-concurrent: 2
+    queue-timeout: 15s
+    run-timeout: 30s
+    memory-mb: 512
+    cpus: 1.0
+    pids-limit: 128
+    max-output-bytes: 1048576
+    images:
+      java: ${SANDBOX_JAVA_IMAGE:eclipse-temurin:21-jdk-alpine}
+      node: ${SANDBOX_NODE_IMAGE:node:24-alpine}
+    pull-on-startup: true
+  ai:
+    # The AI layer (AI_ARCHITECTURE.md). Off: the AI ports answer 503 / degrade as designed, and no provider is needed.
+    # On: every route below must reach a configured provider, or the application refuses to start.
+    enabled: ${AI_ENABLED:false}
+    providers:
+      gemini:
+        # Without a key Gemini is not registered. Never commit a key: it belongs in .env or the environment.
+        api-key: ${GEMINI_API_KEY:}
+        base-url: ${GEMINI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+        timeout: 30s
+        max-retries: 2
+      ollama:
+        enabled: ${OLLAMA_ENABLED:false}
+        base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+        timeout: 120s
+        max-retries: 1
+        # num_ctx: prompt and answer together (Ollama's own default, 4096, cuts long evaluations short).
+        context-window: ${OLLAMA_CONTEXT_WINDOW:16384}
+    # Each task's provider, model and settings. budget bounds the whole operation (retries and the repair attempt
+    # included); the answer-evaluation budget must stay below app.evaluation.attempt-lease.
+    routes:
+      question-generation:
+        provider: gemini
+        model: ${GEMINI_MODEL:gemini-3.8-flash}
+        temperature: 0.7
+        max-output-tokens: 4096
+        thinking: LOW
+        budget: 45s
+      follow-up-generation:
+        provider: gemini
+        model: ${GEMINI_FAST_MODEL:gemini-3.5-flash-lite}
+        temperature: 0.5
+        max-output-tokens: 2048
+        thinking: LOW
+        budget: 30s
+      answer-evaluation:
+        provider: gemini
+        model: ${GEMINI_MODEL:gemini-3.8-flash}
+        temperature: 0.1
+        max-output-tokens: 8192
+        thinking: LOW
+        budget: 75s
+      report-writing:
+        provider: gemini
+        model: ${GEMINI_MODEL:gemini-3.8-flash}
+        temperature: 0.4
+        max-output-tokens: 8192
+        thinking: LOW
+        budget: 60s
+      # The structured profile of an uploaded résumé: copying, not writing, so a low temperature.
+      resume-extraction:
+        provider: gemini
+        model: ${GEMINI_MODEL:gemini-3.8-flash}
+        temperature: 0.1
+        max-output-tokens: 8192
+        thinking: LOW
+        budget: 60s
+
+  rag:
+    # Retrieval-augmented generation (RAG_ARCHITECTURE.md). Active only when the AI layer is on; off, every AI task
+    # runs ungrounded. The curated knowledge base (src/main/resources/knowledge-base) is loaded at startup, idempotently.
+    enabled: ${RAG_ENABLED:true}
+    load-corpus: true
+    embedding:
+      provider: gemini
+      model: ${GEMINI_EMBEDDING_MODEL:gemini-embedding-2}
+      batch-size: 50
+      document-timeout: 60s
+      document-retries: 2
+      # A query is embedded while the candidate waits and never retried: on failure retrieval uses keywords only.
+      # answer-evaluation budget + query-timeout must stay below app.evaluation.attempt-lease.
+      query-timeout: 5s
+    retrieval:
+      candidates: 20
+      rrf-k: 60
+      # Cosine similarity a chunk found only by meaning needs; depends on the embedding model (RAG_ARCHITECTURE.md).
+      # 0.30 is measured for embeddinggemma; gemini-embedding-2 (same family and task-prefix format) is not yet measured.
+      min-similarity: ${RAG_MIN_SIMILARITY:0.30}
+    deduplication:
+      # Cosine similarity from which a generated question counts as a repeat of an earlier question of the interview.
+      # Measured on ai-evals/datasets/question-duplicates.jsonl for gemini-embedding-2: paraphrases score 0.864 or more,
+      # different questions on the same topic at most 0.878; 0.90 catches 21 of 25 paraphrases with no false repeat.
+      min-similarity: ${RAG_DEDUP_MIN_SIMILARITY:0.90}
+
+logging:
+  level:
+    # At DEBUG this logger prints the rejected value of a failed validation, which for a login or registration
+    # request is the submitted password. Keep it at INFO even when the root level is lowered while debugging.
+    org.springframework.web.servlet.mvc.method.annotation.ExceptionHandlerExceptionResolver: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} %5p [%X{traceId:-}] %-40.40logger{39} : %m%n%wEx"
