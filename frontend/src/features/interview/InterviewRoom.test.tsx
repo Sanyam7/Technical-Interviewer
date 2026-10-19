@@ -992,9 +992,13 @@ describe('InterviewRoom: a coding follow-up', () => {
     expect(await screen.findByLabelText('Your solution')).toHaveValue('');
     release();
 
-    await waitFor(() => {
-      expect(screen.getByLabelText('Your solution')).toHaveValue(submitted);
-    });
+    // The lazily loaded editor is seeded again after the transcript arrives: more than the default 3 s on a busy CI runner.
+    await waitFor(
+      () => {
+        expect(screen.getByLabelText('Your solution')).toHaveValue(submitted);
+      },
+      { timeout: 10_000 },
+    );
   });
 });
 
