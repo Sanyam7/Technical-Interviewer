@@ -1,0 +1,29 @@
+# The backend on one virtual machine (README, Deployment, Option C): the Spring Boot API behind Caddy, which serves HTTPS for
+# SITE_ADDRESS; the database is hosted (Neon). The frontend is a static site elsewhere (Netlify), so only the API is published.
+#
+# Next to this file on the machine: Caddyfile (from this folder) and .env (mode 600; see .env.production.example and README).
+#   docker compose up -d
+services:
+  backend:
+    # Built elsewhere for the machine's architecture and loaded with docker load (README, Option C).
+    image: tech-interviewer-backend:deploy
+    env_file: .env
+    environment:
+      JAVA_TOOL_OPTIONS: -XX:MaxRAMPercentage=75 -XX:+ExitOnOutOfMemoryError
+    # A 2 GB machine: the heap gets 75 % of this, the rest is left to the OS and Caddy.
+    mem_limit: 1400m
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    environment:
+      SITE_ADDRESS: "${SITE_ADDRESS:?SITE_ADDRESS is required in .env (the API's host name)}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [backend]
+    restart: unless-stopped
+volumes:
+  caddy_data: {}
+  caddy_config: {}

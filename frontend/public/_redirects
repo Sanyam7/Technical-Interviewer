@@ -1,0 +1,2 @@
+# Netlify: every client-side route is served by the single-page app (Cloudflare Pages does this without a rule).
+/*    /index.html   200

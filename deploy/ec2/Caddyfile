@@ -1,0 +1,11 @@
+# HTTPS for the API host (a certificate from Let's Encrypt, renewed by Caddy). Only the API is published: the actuator and
+# everything else answer 404.
+{$SITE_ADDRESS} {
+	encode gzip
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+	handle {
+		respond 404
+	}
+}

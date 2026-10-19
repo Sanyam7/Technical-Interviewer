@@ -287,7 +287,7 @@ The backend image has no Docker CLI, so candidate code is not executed in it (`C
 
 ## Deployment
 
-Two low-cost options. Both use PostgreSQL with pgvector, Gemini, and no Redis (one backend instance keeps its rate limits in memory, ARCHITECTURE.md §8.1).
+Two low-cost options, and a third that the live deployment uses (Option C: Netlify + AWS EC2 + Neon, https://ai-technical-interviewer.netlify.app). All use PostgreSQL with pgvector, Gemini, and no Redis (one backend instance keeps its rate limits in memory, ARCHITECTURE.md §8.1).
 
 | | Option A: hosted (recommended) | Option B: self-hosted |
 |---|---|---|
@@ -389,9 +389,60 @@ docker compose -f docker-compose.prod.yml --env-file .env.production ps     # db
 
 Always pass `--env-file .env.production`: without it Compose reads the development `.env`. `SITE_ADDRESS` is the domain (its DNS must point at the machine, ports 80 and 443 open): Caddy obtains and renews the certificate. The app and the API share that origin, so `VITE_API_BASE_URL` stays empty and the cookie stays `Lax`. To try the stack on your own machine first, set `SITE_ADDRESS=:80`, `APP_CORS_ALLOWED_ORIGINS=http://localhost` and open http://localhost. Updates: `git pull` and the same `up -d --build`; backups: `docker compose -f docker-compose.prod.yml exec db pg_dump -U interviewer interviewer > backup.sql`.
 
+### Option C: Netlify + AWS EC2 + Neon (the live deployment)
+
+The frontend on Netlify, the backend on one small ARM machine on EC2 behind Caddy, the database on Neon in the same AWS region.
+No domain is needed: `<ip-with-dashes>.sslip.io` resolves to the machine's IP, and Caddy gets a Let's Encrypt certificate for it.
+
+**1. Database (Neon).** As in Option A step 1, in an AWS region (the live one is `aws-us-west-2`, PostgreSQL 17).
+
+**2. Machine (EC2).** In the same region: a `t4g.small` (2 GB, arm64) with Ubuntu 24.04, 20 GB of disk, an Elastic IP, and a
+security group open on 80 and 443 (SSH only from your own address). Install Docker (`curl -fsSL https://get.docker.com | sh`) and
+add 2 GB of swap. Copy [deploy/ec2/compose.yml](deploy/ec2/compose.yml) and [deploy/ec2/Caddyfile](deploy/ec2/Caddyfile) to a
+folder on it, and create `.env` there (mode 600) with the production variables above plus `SITE_ADDRESS`:
+
+```bash
+SITE_ADDRESS=44-253-22-162.sslip.io                     # the machine's Elastic IP, dashes instead of dots
+APP_CORS_ALLOWED_ORIGINS=https://<site>.netlify.app
+APP_REFRESH_COOKIE_SAME_SITE=None                       # the app and the API are two sites (see "One site or two")
+POSTGRES_HOST=<neon direct host>                        # plus POSTGRES_DB/USER/PASSWORD/APP_USER/APP_PASSWORD, JWT_SECRET, GEMINI_API_KEY
+```
+
+**3. Backend image.** Build it where it is fast and load it on the machine (an arm64 build on an Apple Silicon Mac runs as is on
+`t4g`); a 2 GB machine is too small to run the Maven build itself:
+
+```bash
+docker build --platform linux/arm64 -t tech-interviewer-backend:deploy backend/
+docker save tech-interviewer-backend:deploy | gzip | ssh ubuntu@<ip> 'gunzip | docker load'
+ssh ubuntu@<ip> 'cd <folder> && docker compose up -d'
+curl -s https://<ip-with-dashes>.sslip.io/api/v1/health      # {"status":"UP",...,"database":"UP"}
+```
+
+**4. Frontend (Netlify).** Build with the API's address and deploy `dist/` (it contains `_headers` and `_redirects`, which
+Netlify reads for the security headers and the app's routes):
+
+```bash
+cd frontend
+VITE_API_BASE_URL=https://<ip-with-dashes>.sslip.io pnpm build
+npx netlify-cli deploy --prod --dir dist        # or upload dist as a zip through the Netlify API
+```
+
+Cost: the machine, its disk and the IPv4 address are about $17 a month; stopping the machine leaves the address (about $3.60).
+Safari users are signed out at each reload until the app and the API share a domain (custom domain, sibling subdomains).
+
 ### Verified before release
 
 On 2026-10-13, locally: both images build; the Option B stack starts with the example settings, serves the app with its security headers and client-side routes, proxies the API, signs up and stays signed in through a first-party cookie, connects as the restricted role, and runs AI turns end to end (routed to a local model: no Gemini key was available then; the first live Gemini calls, on 2026-10-18, found and fixed a schema Gemini refused, see EVALUATION.md); a wrong Gemini key leaves the backend healthy with a single warning; and in a real browser, an app and an API on two sites lose the session at every reload with `SameSite=Lax` and keep it with `None`. Option A's cloud commands were not run (no accounts were available).
+
+On 2026-10-19, Option C in production (https://ai-technical-interviewer.netlify.app, a free-tier Gemini key): the backend migrated
+Neon on its first start and embedded the knowledge base; in a real browser, sign-up, sign-out, sign-in, a session that survives a
+reload across the two sites (Chromium), a résumé upload and extraction, the setup page, an interview of four answered questions
+in fundamentals-first order (two fundamentals questions, then a scenario), the wrap-up, the results, history and dashboard pages
+(desktop and phone width) and the not-found page all worked, with no errors in the browser. What did not hold up was the free
+Gemini tier: its answers slowed from about 4 to 25–30 seconds for the same requests, so half of the calls hit the 30-second
+timeout, and its 20 requests a day ran out within that one interview; the report then said that only 37 % could be evaluated and
+gave no score, as designed. The live machine therefore allows Gemini 60 seconds per call (`SPRING_APPLICATION_JSON` in its
+`.env`); a paid key is needed for real use.
 
 ---
 
@@ -403,6 +454,7 @@ On 2026-10-13, locally: both images build; the Option B stack starts with the ex
 ├── docker-compose.prod.yml   the self-hosted production stack (db, backend, web)
 ├── .env.example              every configuration key, with placeholders
 ├── .env.production.example   the production settings, all secrets empty
+├── deploy/ec2/               the backend on one machine behind Caddy (Option C): compose.yml and Caddyfile
 ├── backend/                  Spring Boot application (com.techinterviewer); Dockerfile
 │   ├── src/main/java/com/techinterviewer/
 │   │   ├── common/           api conventions, problem+json errors, request correlation, ids, JSON/persistence base
